@@ -24,16 +24,12 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 PREPROCESSING_DIR = BASE_DIR / "Preprocessing"
-REPORTS_DIR = BASE_DIR / "reports"
-GRAPHICS_DIR = BASE_DIR / "graphics"
-FILES_DIR = BASE_DIR / "files"
+SRC_DIR = BASE_DIR.parent
+REPORTS_DIR = SRC_DIR / "reports"
+GRAPHICS_DIR = SRC_DIR / "graphics"
+FILES_DIR = SRC_DIR / "files"
 
-INPUT_DEFAULT_PATH = (
-    BASE_DIR.parent
-    / "00_Data_Clean"
-    / "00_Data_clean"
-    / "retail_store_inventory_produccion_unknown.csv"
-)
+INPUT_DEFAULT_PATH = FILES_DIR / "retail_store_inventory_produccion_unknown.csv"
 OUTPUT_DEFAULT_PATH = FILES_DIR / "T_new_final.csv"
 REPORT_DEFAULT_PATH = REPORTS_DIR / "01_b_preprocessing_production_report.txt"
 PLOT_3D_DEFAULT_PATH = GRAPHICS_DIR / "pca_3d_nuevos.html"
