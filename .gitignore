@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+
+# Mac
+.DS_Store
+
+# Outputs
+src/files/
+src/graphics/
+src/reports/
