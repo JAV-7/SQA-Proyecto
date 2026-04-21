@@ -1,15 +1,30 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+Regularization 
 
-# # 05 - Regularización
-# 
-# **Objetivo:** Aplicar técnicas de regularización (Ridge, Lasso, Elastic Net) y comparar con el modelo de regresión lineal base.
-# 
-# **Técnicas:** Ridge (L2), Lasso (L1), Elastic Net (L1+L2)
+El propósito de este archivo es aplicar técnicas de regularización
+(Ridge, Lasso y Elastic Net) sobre modelos de regresión lineal,
+con el fin de mejorar el desempeño y reducir el sobreajuste.
+ - comparacion_regularizacion.csv
+ - coeficientes_modelos.csv
+ - betas_post_pre_numericas.csv
+ - comparacion_regularizacion.png
+ - reg_lin_ganador_bundle.zip
 
-# In[1]:
+Estudiantes: Francisco Javier Ramos Jimenez,
+             Karen Elizabeth Gonzalez Santana
 
+Materia: Calidad de Software
 
+Docente: Sarahi Partida Ochoa
+
+Creditos especiales: Sofia Vanessa Noyola,
+                     Sebastian Garcia-Moreno Zinchenko,
+                     Mtro. Miguel Tlapa
+
+V 0.0
+"""
 import pandas as pd
 import numpy as np
 import joblib
@@ -22,10 +37,7 @@ from sklearn.linear_model import RidgeCV, LassoCV, ElasticNetCV, LinearRegressio
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 
-# ## 1. Cargar Datos
-
-# In[2]:
-
+# 1. Cargar Datos
 
 # Cargar datos de entrenamiento y test
 df_train = pd.read_csv('../01_preprocessing_results/preprocessing/T_train_final_objetivo.csv')
@@ -43,57 +55,34 @@ print(f"Datos de entrenamiento: {X_train.shape[0]} muestras, {X_train.shape[1]} 
 print(f"Datos de test: {X_test.shape[0]} muestras")
 
 
-# ## 2. Entrenar Modelos Regularizados con Validación Cruzada
-
-# In[3]:
-
+# 2. Entrenar Modelos Regularizados con Validación Cruzada
 
 # Definir rango de alphas a probar
 alphas = np.logspace(-4, 4, 50)
 
 print("Entrenando modelos con validación cruzada (5-fold)...\n")
 
-
-# In[4]:
-
-
 # Regresión Lineal base (sin regularización)
 reg_lineal = LinearRegression()
 reg_lineal.fit(X_train, y_train)
 print("Regresión Lineal base entrenada")
 
-
-# In[5]:
-
-
 # Ridge Regression (L2)
 ridge = RidgeCV(alphas=alphas, cv=5)
 ridge.fit(X_train, y_train)
-print(f"Ridge - Mejor alpha: {ridge.alpha_:.6f}")
-
-
-# In[6]:
-
+print
 
 # Lasso Regression (L1)
 lasso = LassoCV(alphas=alphas, cv=5, max_iter=10000, random_state=42)
 lasso.fit(X_train, y_train)
 print(f"Lasso - Mejor alpha: {lasso.alpha_:.6f}")
 
-
-# In[7]:
-
-
 # Elastic Net (L1 + L2)
 elastic = ElasticNetCV(alphas=alphas, l1_ratio=[0.1, 0.5, 0.7, 0.9, 0.95], cv=5, max_iter=10000, random_state=42)
 elastic.fit(X_train, y_train)
 print(f"Elastic Net - Mejor alpha: {elastic.alpha_:.6f}, l1_ratio: {elastic.l1_ratio_:.2f}")
 
-
-# ## 3. Calcular Métricas
-
-# In[8]:
-
+# 3. Calcular Métricas
 
 def calcular_metricas(modelo, X, y, nombre):
     """Calcula R², RMSE y MAE"""
@@ -104,10 +93,6 @@ def calcular_metricas(modelo, X, y, nombre):
         'RMSE': np.sqrt(mean_squared_error(y, y_pred)),
         'MAE': mean_absolute_error(y, y_pred)
     }
-
-
-# In[9]:
-
 
 # Calcular métricas para todos los modelos
 metricas = [
@@ -129,11 +114,7 @@ print("="*60)
 df_metricas.to_csv('comparacion_regularizacion.csv')
 print("\nGuardado: comparacion_regularizacion.csv")
 
-
-# ## 4. Coeficientes de los Modelos
-
-# In[10]:
-
+# 4. Coeficientes de los Modelos
 
 # Crear DataFrame con coeficientes de todos los modelos
 coeficientes = pd.DataFrame({
@@ -160,10 +141,6 @@ print("Coeficientes de los modelos:")
 print(coeficientes.round(4).to_string(index=False))
 print("\nGuardado: coeficientes_modelos.csv")
 
-
-# In[11]:
-
-
 # Betas pre y post regularización (solo variables numéricas PCA)
 pca_cols = [col for col in feature_names if col.startswith('PC')]
 
@@ -178,11 +155,7 @@ print("Betas pre/post regularización (numéricas):")
 print(betas_pca.round(4).to_string(index=False))
 print("\nGuardado: betas_post_pre_numericas.csv")
 
-
-# ## 5. Visualización
-
-# In[12]:
-
+#  5. Visualización
 
 # Gráfico de barras comparativo
 fig, axes = plt.subplots(1, 3, figsize=(14, 4))
@@ -214,11 +187,7 @@ plt.show()
 
 print("Gráfico guardado: comparacion_regularizacion.png")
 
-
-# ## 6. Selección y Guardado del Mejor Modelo
-
-# In[13]:
-
+# 6. Selección y Guardado del Mejor Modelo
 
 # Encontrar el mejor modelo regularizado (excluyendo base)
 df_regularizados = df_metricas.drop('Reg. Lineal (base)')
@@ -235,10 +204,6 @@ modelos_dict = {
 }
 
 mejor_modelo = modelos_dict[mejor_modelo_nombre]
-
-
-# In[14]:
-
 
 # Crear estructura de carpetas
 os.makedirs('reg_lin_ganador/reg_lin_ganador_bundle', exist_ok=True)
@@ -265,10 +230,6 @@ with open('reg_lin_ganador/reg_lin_ganador_bundle/metadata_modelo.json', 'w') as
 print(f"Modelo guardado: reg_lin_ganador/reg_lin_ganador_bundle/{modelo_filename}")
 print("Metadata guardada: reg_lin_ganador/reg_lin_ganador_bundle/metadata_modelo.json")
 
-
-# In[15]:
-
-
 # Crear ZIP del bundle
 with zipfile.ZipFile('reg_lin_ganador/reg_lin_ganador_bundle.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
     zipf.write(f'reg_lin_ganador/reg_lin_ganador_bundle/{modelo_filename}', modelo_filename)
@@ -276,11 +237,7 @@ with zipfile.ZipFile('reg_lin_ganador/reg_lin_ganador_bundle.zip', 'w', zipfile.
 
 print("ZIP creado: reg_lin_ganador/reg_lin_ganador_bundle.zip")
 
-
-# ## 7. Conclusión
-
-# In[16]:
-
+# 7. Conclusión
 
 print("\n" + "="*60)
 print("CONCLUSIÓN")

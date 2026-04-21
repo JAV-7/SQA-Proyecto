@@ -1,25 +1,31 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+Random Forest
 
-# In[339]:
+El propósito de este archivo es entrenar un modelo de Random Forest
+utilizando datos previamente preprocesados, con el fin de predecir
+el valor objetivo. Además, se generan los artefactos necesarios
+para su uso en producción y evaluación del modelo.
 
+ - modelo_random_forest.pkl
+ - expected_columns.json
+ - feature_importance.csv
+ - mi_random_forest_artifacts_bundle.zip
 
-#####################################################
-#
-# Aplicar Random Forest a datos preprocesados con PCA
-#
-#####################################################
-# Deben cargarse los archivos
-# - T_train_final_objetivo.csv
-# - T_test_final_objetivo.csv
-# - pca_pipe_num.joblib
-# - pca_metadata.json
-# Devolverá
-# expected_columns.json (columnas que deberán tener datos que nunca ha visto)
-# feature_importance.csv (importancia de cada columna)
-# modelo_random_forest.pkl (modelo ya entrenado)
-# mi_random_forest_artifacts_bundle.zip
-#####################################################
+Estudiantes: Francisco Javier Ramos Jimenez,
+             Karen Elizabeth Gonzalez Santana
+
+Materia: Calidad de Software
+
+Docente: Sarahi Partida Ochoa
+
+Creditos especiales: Sofia Vanessa Noyola,
+                     Sebastian Garcia-Moreno Zinchenko,
+                     Mtro. Miguel Tlapa
+
+V 0.0
+"""
 
 import pandas as pd
 import numpy as np
@@ -33,19 +39,14 @@ import time
 import os
 import zipfile
 
-##################################################################################################
 Train = pd.read_csv("../../01_preprocessing_results/preprocessing/T_train_final_objetivo.csv")
 Test = pd.read_csv("../../01_preprocessing_results/preprocessing/T_test_final_objetivo.csv")
-##################################################################################################
 
 X_train = Train.iloc[:, :-1]
 y_train = Train.iloc[:, -1].to_numpy(dtype=float)
 
 X_test = Test.iloc[:, :-1]
 y_test = Test.iloc[:, -1].to_numpy(dtype=float)
-
-
-# In[340]:
 
 
 SEP = "___"
@@ -71,15 +72,9 @@ def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
     return blocks
 
 
-# In[341]:
-
-
 # 1) --- PRECOMPUTA CON TRAIN ---
 blocks = build_nominal_blocks_by_prefix(X_train, SEP)
 drop_cols = [cols[0] for cols in blocks.values() if len(cols) >= 2]  # primera de cada bloque
-
-
-# In[342]:
 
 
 # 2) --- PIPELINE CON RANDOM FOREST ---
@@ -104,31 +99,16 @@ mi_random_forest = Pipeline([
 ])
 
 
-# In[343]:
-
-
 # 3) --- FIT & PRED ---
 print("Training random forest")
 mi_random_forest.fit(X_train, y_train)
 print("Training completed")
 
-
-# In[344]:
-
-
 # Obtener importancia de features
 feature_importances = mi_random_forest.named_steps["rf"].feature_importances_
 
-
-# In[345]:
-
-
 # Nombres de columnas después del dropper
 feature_names = mi_random_forest.named_steps["dropper"].get_feature_names_out(X_train.columns)
-
-
-# In[346]:
-
 
 # Mostrar importancia de features
 importance_df = pd.DataFrame({
@@ -139,18 +119,11 @@ importance_df = pd.DataFrame({
 print("\nFeatures importance (sorted):")
 print(importance_df)
 
-
-# In[347]:
-
-
 # Parámetros del modelo
 print("\nRandom Forest Parameters:")
 print(f"Trees num: {mi_random_forest.named_steps['rf'].n_estimators}")
 print(f"Max depth: {mi_random_forest.named_steps['rf'].max_depth}")
 print(f"Max features: {mi_random_forest.named_steps['rf'].max_features}")
-
-
-# In[348]:
 
 
 # Evaluación en train y test
@@ -169,25 +142,13 @@ print(f"  RMSE: {np.sqrt(mean_squared_error(y_test, y_test_pred)):.4f}")
 print(f"  MAE: {mean_absolute_error(y_test, y_test_pred):.4f}")
 
 
-# In[349]:
-
-
-###### Guardado del modelo
-
 # guarda el pipeline completo (dropper + RandomForestRegressor)
 joblib.dump(mi_random_forest, "modelo_random_forest.pkl")
-
-
-# In[350]:
-
 
 # guarda el orden/esperado de columnas de entrenamiento
 expected_cols = X_train.columns.tolist()
 with open("expected_columns.json", "w", encoding="utf-8") as f:
     json.dump({"columns": expected_cols, "saved_at": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
-
-
-# In[351]:
 
 
 # guarda también la importancia de features
@@ -197,10 +158,6 @@ print("\nSaved artefacts:")
 print("  - modelo_random_forest.pkl")
 print("  - expected_columns.json")
 print("  - feature_importance.csv")
-
-
-# In[352]:
-
 
 # Crear ZIP
 dst_dir = r"mi_random_forest"

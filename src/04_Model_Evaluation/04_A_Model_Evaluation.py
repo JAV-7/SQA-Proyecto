@@ -1,14 +1,30 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+Model Evaluation
 
-# # 04 - Evaluación de Modelos
-# 
-# **Objetivo:** Comparar el rendimiento de Regresión Lineal y Random Forest para seleccionar el mejor modelo.
-# 
-# **Métricas:** R², RMSE, MAE, MAPE
+El propósito de este archivo es comparar el rendimiento de los modelos
+de Regresión Lineal y Random Forest utilizando datos de prueba,
+con el fin de seleccionar el mejor modelo para producción.
 
-# In[22]:
+Se calculan métricas como R², RMSE, MAE y MAPE, además de generar
+visualizaciones.
+ - comparacion_modelos.png
+ - metricas_comparativas.csv
 
+Estudiantes: Francisco Javier Ramos Jimenez,
+             Karen Elizabeth Gonzalez Santana
+
+Materia: Calidad de Software
+
+Docente: Sarahi Partida Ochoa
+
+Creditos especiales: Sofia Vanessa Noyola,
+                     Sebastian Garcia-Moreno Zinchenko,
+                     Mtro. Miguel Tlapa
+
+V 0.0
+"""
 
 import pandas as pd
 import numpy as np
@@ -16,11 +32,7 @@ import joblib
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
-
-# ## 1. Cargar Datos y Modelos
-
-# In[23]:
-
+# 1. Cargar Datos y Modelos
 
 # Cargar datos de test
 df_test = pd.read_csv('../01_preprocessing_results/preprocessing/T_test_final_objetivo.csv')
@@ -32,21 +44,13 @@ y_test = df_test['objetivo']
 print(f"Datos de test: {X_test.shape[0]} muestras, {X_test.shape[1]} features")
 print(f"Variable objetivo - Min: {y_test.min():.2f}, Max: {y_test.max():.2f}, Media: {y_test.mean():.2f}")
 
-
-# In[24]:
-
-
 # Cargar modelos (guardados con joblib)
 modelo_lineal = joblib.load('../02_lineal_regression_results/regression_lineal/modelo_reg_lineal.pkl')
 modelo_rf = joblib.load('../03_random_forest_results/random_forest/modelo_random_forest.pkl')
 
 print("Modelos cargados correctamente")
 
-
-# ## 2. Generar Predicciones
-
-# In[25]:
-
+# 2. Generar Predicciones
 
 # Predicciones
 y_pred_lineal = modelo_lineal.predict(X_test)
@@ -54,11 +58,7 @@ y_pred_rf = modelo_rf.predict(X_test)
 
 print(f"Predicciones Regresión Lineal - Min: {y_pred_lineal.min():.2f}, Max: {y_pred_lineal.max():.2f}")
 print(f"Predicciones Random Forest - Min: {y_pred_rf.min():.2f}, Max: {y_pred_rf.max():.2f}")
-
-
-# ## 3. Calcular Métricas
-
-# In[26]:
+# 3. Calcular Métricas
 
 
 def calcular_metricas(y_real, y_pred, nombre_modelo):
@@ -80,9 +80,6 @@ def calcular_metricas(y_real, y_pred, nombre_modelo):
     }
 
 
-# In[27]:
-
-
 # Calcular métricas para ambos modelos
 metricas_lineal = calcular_metricas(y_test, y_pred_lineal, 'Regresión Lineal')
 metricas_rf = calcular_metricas(y_test, y_pred_rf, 'Random Forest')
@@ -98,11 +95,7 @@ print("="*60)
 print(df_metricas.to_string())
 print("="*60)
 
-
-# ## 4. Visualizaciones
-
-# In[28]:
-
+# 4. Visualizaciones
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
@@ -143,10 +136,7 @@ plt.show()
 print("Gráfico guardado: comparacion_modelos.png")
 
 
-# ## 5. Conclusión
-
-# In[29]:
-
+# 5. Conclusión
 
 # Determinar modelo ganador
 mejor_r2 = 'Random Forest' if metricas_rf['R²'] > metricas_lineal['R²'] else 'Regresión Lineal'
@@ -170,11 +160,7 @@ if ganador == 'Random Forest':
 else:
     print(f"\nJustificación: Regresión Lineal tiene mejor R² ({metricas_lineal['R²']:.4f} vs {metricas_rf['R²']:.4f})")
 
-
-# In[32]:
-
-
-# Semáforo (sin CV), "aquí dentro"
+# Semáforo
 # Para random forest
 verde = (metricas_rf['R²'] >= 0.70) and (metricas_rf['NRMSE'] <= 0.50)
 amarilo = (0.40 <= metricas_rf['R²'] < 0.70) or (0.50 < metricas_rf['NRMSE'] <= 0.80)
@@ -202,10 +188,6 @@ else:
     veredicto = "ROJO"
     significado = "no confiable para predicción aquí dentro"
 print(f"El veredicto para el modelo Regresión Lineal es: {veredicto}\n{significado}")
-
-
-# In[33]:
-
 
 # Guardar resultados
 df_metricas.to_csv('metricas_comparativas.csv')
