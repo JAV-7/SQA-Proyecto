@@ -62,10 +62,7 @@ def main() -> bool:
     ]
 
 
-    if tqdm:
-        stage_iterable = tqdm(stages, total=len(stages), desc="Pipeline", unit="etapa")
-    else:
-        stage_iterable = stages
+    stage_iterable = tqdm(stages, total=len(stages), desc="Pipeline", unit="etapa")
 
     for stage_name, stage_script in stage_iterable:
         stage_path = src_dir / stage_script
