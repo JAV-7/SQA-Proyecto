@@ -32,6 +32,7 @@ REPORTS_DIR = BASE_DIR / "reports"
 GRAPHICS_DIR = BASE_DIR / "graphics"
 FILES_DIR = BASE_DIR / "files"
 
+
 INITIAL_INSIGHTS_PATH = REPORTS_DIR / "initial_insights.txt"
 CLEAN_DATA_PATH = REPORTS_DIR / "clean_data.txt"
 

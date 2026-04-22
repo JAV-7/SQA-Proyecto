@@ -53,6 +53,7 @@ def calcular_metricas(modelo, X, y, nombre):
     }
 
 def regularization() -> bool:
+    """Ejecuta el proceso de regularización y retorna True/False."""
     try:
         path_train = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing" / "T_train_final_objetivo.csv"
         path_test = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"

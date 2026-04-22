@@ -36,6 +36,7 @@ PLOT_3D_DEFAULT_PATH = GRAPHICS_DIR / "pca_3d_nuevos.html"
 
 
 def _ensure_output_dirs() -> None:
+    """Crea los directorios de salida si no existen."""
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
     FILES_DIR.mkdir(parents=True, exist_ok=True)

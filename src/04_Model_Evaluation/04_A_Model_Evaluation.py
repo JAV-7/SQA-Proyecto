@@ -60,6 +60,7 @@ def calcular_metricas(y_real, y_pred, nombre_modelo):
 
 
 def model_evaluation() -> bool:
+    """Ejecuta la evaluación de modelos y retorna True/False."""
     try:
         path_data = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
         df_test = pd.read_csv(path_data)
@@ -73,7 +74,7 @@ def model_evaluation() -> bool:
         path_lineal = PROJECT_ROOT / "src" / "02_Lineal_Regression" / "regression_lineal" / "modelo_reg_lineal.pkl"
         modelo_lineal = joblib.load(path_lineal)
 
-        path_rf = PROJECT_ROOT / "modelo_random_forest.pkl"
+        path_rf = PROJECT_ROOT / "src" / "03_Random_Forest" / "Random_Forest" / "modelo_random_forest.pkl"
         modelo_rf = joblib.load(path_rf)
 
         y_pred_lineal = modelo_lineal.predict(X_test)

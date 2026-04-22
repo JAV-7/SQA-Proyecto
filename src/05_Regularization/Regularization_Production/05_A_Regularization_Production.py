@@ -27,6 +27,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 def regularization_production() -> bool:
+    """Ejecuta la predicción con el modelo de regularización en producción y retorna True/False."""
     try:
         bundle_path = PROJECT_ROOT / "reg_lin_ganador" / "reg_lin_ganador_bundle"
         modelo = joblib.load(bundle_path / "modelo_elasticnet.pkl")

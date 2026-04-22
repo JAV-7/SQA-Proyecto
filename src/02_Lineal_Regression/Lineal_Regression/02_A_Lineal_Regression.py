@@ -51,6 +51,7 @@ REPORT_PATH = REPORTS_DIR / "01_a_preprocessing_report.txt"
 
 
 def _ensure_output_dirs() -> None:
+    """ Crea los directorios de salida si no existen. """
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
     FILES_DIR.mkdir(parents=True, exist_ok=True)
@@ -60,15 +61,18 @@ SEP = "___"  # Con esto encuentra las columnas Categoricas (One Hot)
 
 
 def is_binary_series(s: pd.Series):
+    """Determina si una serie es binaria (0/1) considerando NaNs."""
     vals = pd.unique(s.dropna())
     return set(vals).issubset({0, 1}) or set(vals).issubset({0.0, 1.0})
 
 
 def prefix_of(col: str, sep=SEP):
+    """Dado un nombre de columna, devuelve el prefijo antes del separador si existe."""
     return col.split(sep, 1)[0] if sep in col else None
 
 
 def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
+    """Agrupa columnas binarias por su prefijo común antes del separador."""
     blocks = {}
     for c in X.columns:
         if sep in c and is_binary_series(X[c]):
@@ -79,6 +83,7 @@ def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
     return blocks
 
 def lineal_regression()-> bool:
+    """Ejecuta el entrenamiento de regresión lineal y retorna True/False."""
     try:
         _ensure_output_dirs()
 

@@ -50,6 +50,7 @@ REPORT_PATH = REPORTS_DIR / "01_a_preprocessing_report.txt"
 
 
 def _ensure_output_dirs() -> None:
+    """Crea los directorios de salida si no existen."""
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
     FILES_DIR.mkdir(parents=True, exist_ok=True)
@@ -57,6 +58,7 @@ def _ensure_output_dirs() -> None:
 
 
 def _save_numeric_diagnostic_plots(df_num: pd.DataFrame) -> None:
+    """Genera y guarda histogramas y boxplots para columnas numéricas."""
     cols_num = list(df_num.columns)
     if not cols_num:
         return
@@ -121,6 +123,7 @@ def _save_pca_plots(
     k_elbow: int,
     show_plots: bool,
 ) -> None:
+    """Genera y guarda gráficos relacionados con PCA."""
     ks = np.arange(1, len(explained_ratio) + 1)
 
     fig, axs = plt.subplots(1, 2, figsize=(11, 4))
