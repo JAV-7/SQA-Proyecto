@@ -442,3 +442,6 @@ def preprocessing(
     except Exception as error:
         print(f"Error en preprocessing: {error}")
         return False
+
+if __name__ == "__main__":
+    preprocessing()

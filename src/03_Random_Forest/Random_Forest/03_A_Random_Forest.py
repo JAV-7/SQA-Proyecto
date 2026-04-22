@@ -39,8 +39,17 @@ import time
 import os
 import zipfile
 
-Train = pd.read_csv("../../01_preprocessing_results/preprocessing/T_train_final_objetivo.csv")
-Test = pd.read_csv("../../01_preprocessing_results/preprocessing/T_test_final_objetivo.csv")
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[3]
+
+Train = pd.read_csv(
+    BASE_DIR / "src" / "01_Preprocessing" / "Preprocessing" / "T_train_final_objetivo.csv"
+)
+
+Test = pd.read_csv(
+    BASE_DIR / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
+)
 
 X_train = Train.iloc[:, :-1]
 y_train = Train.iloc[:, -1].to_numpy(dtype=float)

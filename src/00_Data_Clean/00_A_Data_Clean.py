@@ -229,3 +229,18 @@ def save_clean_data(df: pd.DataFrame) -> bool:
     except Exception as error:
         print(f"Error al guardar datos limpios: {error}")
         return False
+
+if __name__ == "__main__":
+    df = pd.read_csv(BASE_DIR / "files" / "retail_store_inventory.csv")
+
+    print("Generando insights...")
+    get_initial_insights(df)
+
+    print("Limpiando datos...")
+    df_clean = clean_data(df)
+
+    if df_clean is not None:
+        print("Guardando datos...")
+        save_clean_data(df_clean)
+
+    print("Proceso terminado")

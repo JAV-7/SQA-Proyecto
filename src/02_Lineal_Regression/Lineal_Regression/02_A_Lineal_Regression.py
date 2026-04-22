@@ -182,5 +182,6 @@ def lineal_regression()-> bool:
         print(f"Error in lineal regression: {error}")
         return False
 
-
+if __name__ == "__main__":
+    lineal_regression()
 

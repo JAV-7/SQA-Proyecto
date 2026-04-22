@@ -21,14 +21,18 @@ import pandas as pd
 import numpy as np
 import joblib
 import json
+from pathlib import Path
 
 # 1. Cargar Modelo y Metadata
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 # Cargar modelo ganador
-modelo = joblib.load('reg_lin_ganador/reg_lin_ganador_bundle/modelo_elasticnet.pkl')
+bundle_path = PROJECT_ROOT / "reg_lin_ganador" / "reg_lin_ganador_bundle"
+modelo = joblib.load(bundle_path / 'modelo_elasticnet.pkl')
 
 # Cargar metadata
-with open('reg_lin_ganador/reg_lin_ganador_bundle/metadata_modelo.json', 'r') as f:
+with open(bundle_path / 'metadata_modelo.json', 'r') as f:
     metadata = json.load(f)
 
 print(f"Modelo cargado: {metadata['modelo']}")
@@ -38,8 +42,8 @@ print(f"R² en test: {metadata['r2_score']:.4f}")
 # 2. Cargar Nuevos Datos
 
 # Cargar datos nuevos preprocesados
-df_new = pd.read_csv('../01_preprocessing_results/preprocessing_production/T_new_final.csv')
-
+path_new_data = PROJECT_ROOT / "src" / "files" / "T_new_final.csv"
+df_new = pd.read_csv(path_new_data)
 # Verificar columnas
 expected_cols = metadata['features']
 X_new = df_new[expected_cols]

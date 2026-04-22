@@ -35,7 +35,11 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 # 1. Cargar Datos y Modelos
 
 # Cargar datos de test
-df_test = pd.read_csv('../01_preprocessing_results/preprocessing/T_test_final_objetivo.csv')
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+path_data = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
+df_test = pd.read_csv(path_data)
 
 # Separar features y objetivo
 X_test = df_test.drop(columns=['objetivo'])
@@ -45,10 +49,11 @@ print(f"Datos de test: {X_test.shape[0]} muestras, {X_test.shape[1]} features")
 print(f"Variable objetivo - Min: {y_test.min():.2f}, Max: {y_test.max():.2f}, Media: {y_test.mean():.2f}")
 
 # Cargar modelos (guardados con joblib)
-modelo_lineal = joblib.load('../02_lineal_regression_results/regression_lineal/modelo_reg_lineal.pkl')
-modelo_rf = joblib.load('../03_random_forest_results/random_forest/modelo_random_forest.pkl')
+path_lineal = PROJECT_ROOT / "src" / "02_Lineal_Regression" / "regression_lineal" / "modelo_reg_lineal.pkl"
+modelo_lineal = joblib.load(path_lineal)
 
-print("Modelos cargados correctamente")
+path_rf = PROJECT_ROOT / "modelo_random_forest.pkl"
+modelo_rf = joblib.load(path_rf)
 
 # 2. Generar Predicciones
 
@@ -189,7 +194,10 @@ else:
     significado = "no confiable para predicción aquí dentro"
 print(f"El veredicto para el modelo Regresión Lineal es: {veredicto}\n{significado}")
 
-# Guardar resultados
-df_metricas.to_csv('metricas_comparativas.csv')
-print("Métricas guardadas en: metricas_comparativas.csv")
+ruta_grafica = PROJECT_ROOT / "src" / "graphics" / "comparacion_modelos.png"
+plt.savefig(ruta_grafica, dpi=150)
 
+# Guardar el CSV 
+ruta_csv = PROJECT_ROOT / "src" / "reports" / "metricas_comparativas.csv"
+df_metricas.to_csv(ruta_csv)
+print(f"Resultados guardados en:\n- {ruta_grafica}\n- {ruta_csv}")

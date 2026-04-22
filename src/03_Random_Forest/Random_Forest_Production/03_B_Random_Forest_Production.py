@@ -28,40 +28,27 @@ import json
 SRC_DIR = Path(__file__).resolve().parents[2]
 MODULE_DIR = Path(__file__).resolve().parents[1]
 FILES_DIR = SRC_DIR / "files"
-MODEL_DIR = MODULE_DIR / "random_forest"
 INPUT_CSV_PATH = FILES_DIR / "T_new_final.csv"
 OUTPUT_CSV_PATH = FILES_DIR / "Random_forest_nuevos_predicciones.csv"
 
 
-def _resolve_model_dir() -> Path | None:
-    """Encuentra la carpeta donde existen los artefactos del modelo."""
-    candidates = [
-        MODULE_DIR / "random_forest",
-        MODULE_DIR / "Random_Forest",
-    ]
+BASE_DIR = Path(__file__).resolve().parents[3]
 
-    for candidate in candidates:
-        model_path = candidate / "modelo_random_forest.pkl"
-        columns_path = candidate / "expected_columns.json"
-        if model_path.exists() and columns_path.exists():
-            return candidate
-
-    return None
+MODEL_PATH = BASE_DIR / "modelo_random_forest.pkl"
+COLS_PATH = BASE_DIR / "expected_columns.json"
 
 # Cargar artefactos
 def random_forest_production()-> bool:
     """Ejecuta la predicción con el modelo de Random
     Forest en producción y retorna True/False."""
     try:
-        model_dir = _resolve_model_dir()
-        if model_dir is None:
-            print("Error: No se encontraron artefactos del modelo en random_forest ni Random_Forest")
+        if not MODEL_PATH.exists():
+            print(f"Error: no existe el modelo en {MODEL_PATH}")
             return False
 
-        modelo = joblib.load(model_dir / "modelo_random_forest.pkl")
-        with open(model_dir / "expected_columns.json", "r", encoding="utf-8") as f:
+        modelo = joblib.load(MODEL_PATH)
+        with open(COLS_PATH, "r", encoding="utf-8") as f:
             expected_cols = json.load(f)["columns"]
-
         df_nuevo = pd.read_csv(INPUT_CSV_PATH)
 
         if not all(col in df_nuevo.columns for col in expected_cols):
@@ -73,7 +60,7 @@ def random_forest_production()-> bool:
         y_pred = modelo.predict(df_nuevo)
 
         out = df_nuevo.copy()
-        out["yhat"] = y_pred
+        out["prediction"] = y_pred
         OUTPUT_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
         out.to_csv(OUTPUT_CSV_PATH, index=False)
         print(f"Predictions saved: {OUTPUT_CSV_PATH}")
@@ -82,7 +69,8 @@ def random_forest_production()-> bool:
         print(f"Error in random forest production: {error}")
         return False
 
-
+if __name__ == "__main__":
+    random_forest_production()
 
 
 

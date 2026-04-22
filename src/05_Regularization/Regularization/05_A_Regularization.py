@@ -35,13 +35,16 @@ import time
 import matplotlib.pyplot as plt
 from sklearn.linear_model import RidgeCV, LassoCV, ElasticNetCV, LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-
+from pathlib import Path
 
 # 1. Cargar Datos
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+path_train = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing"  / "T_train_final_objetivo.csv"
+path_test = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
 
 # Cargar datos de entrenamiento y test
-df_train = pd.read_csv('../01_preprocessing_results/preprocessing/T_train_final_objetivo.csv')
-df_test = pd.read_csv('../01_preprocessing_results/preprocessing/T_test_final_objetivo.csv')
+df_train = pd.read_csv(path_train)
+df_test = pd.read_csv(path_test)
 
 # Separar features y objetivo
 X_train = df_train.drop(columns=['objetivo'])

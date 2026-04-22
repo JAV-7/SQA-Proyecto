@@ -61,4 +61,6 @@ def lineal_regression_production() -> bool:
         return False
 
 
+if __name__ == "__main__":
+    lineal_regression_production()
 
