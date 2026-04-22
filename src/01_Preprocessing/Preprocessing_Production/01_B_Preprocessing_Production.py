@@ -167,6 +167,8 @@ def preprocessing_production(
         print(f"Error en preprocessing_production: {error}")
         return False
 
+if __name__ == "__main__":
+    preprocessing_production()
 
 
 
