@@ -73,7 +73,7 @@ def main() -> bool:
             return False
 
     print("\n=== Todas las etapas completadas exitosamente ===")
-    return 
+    return True 
 
 if __name__ == "__main__":
     main()
