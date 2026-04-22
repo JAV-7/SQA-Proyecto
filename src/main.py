@@ -20,7 +20,7 @@ V 0.0
 
 import subprocess
 
-from src.paths import (
+from paths import (
     DATA_CLEAN_PATH,
     LINEAL_REGRESSION_PATH,
     RANDOM_FOREST_PATH,
