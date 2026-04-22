@@ -23,6 +23,7 @@ from pathlib import Path
 import json
 import math
 import os
+import sys
 import zipfile
 
 import joblib
@@ -30,16 +31,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from tqdm import tqdm
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
-from src.Common_Functions.IQR import iqr_outlier_stats
-
 
 SRC_DIR = Path(__file__).resolve().parents[2]
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from Common_Functions.IQR import iqr_outlier_stats
+
+
 PREPROCESSING_DIR = Path(__file__).resolve().parent
 REPORTS_DIR = SRC_DIR / "reports"
 GRAPHICS_DIR = SRC_DIR / "graphics"
@@ -197,10 +203,12 @@ def preprocessing(
 ) -> bool:
     """Ejecuta el preprocesamiento de entrenamiento y retorna True/False."""
     _ensure_output_dirs()
+    progress = tqdm(total=7, desc="Preprocessing Train", unit="paso")
 
     input_path = Path(input_csv_path) if input_csv_path else INPUT_DEFAULT_PATH
 
     try:
+        progress.set_postfix_str("Cargando datos")
         df = pd.read_csv(input_path)
 
         y = df["Demand Forecast"]
@@ -213,6 +221,7 @@ def preprocessing(
             random_state=random_state,
             shuffle=True,
         )
+        progress.update(1)
 
         cols_num = [
             "Store ID",
@@ -231,8 +240,10 @@ def preprocessing(
         x_test_num = x_test[cols_num]
         x_train_cat = x_train[cols_cat]
         x_test_cat = x_test[cols_cat]
+        progress.set_postfix_str("Graficos diagnostico")
 
         _save_numeric_diagnostic_plots(x_train_num)
+        progress.update(1)
 
         cols_onehot = ["Category", "Region", "Holiday/Promotion", "Seasonality"]
         preprocessor_cat = ColumnTransformer(
@@ -250,6 +261,8 @@ def preprocessing(
         preprocessor_cat.fit(x_train_cat)
         x_train_cat_proc = preprocessor_cat.transform(x_train_cat)
         x_test_cat_proc = preprocessor_cat.transform(x_test_cat)
+        progress.set_postfix_str("Encoding categoricas")
+        progress.update(1)
 
         onehot = preprocessor_cat.named_transformers_.get("onehot")
         rename_map: dict[str, str] = {}
@@ -334,6 +347,8 @@ def preprocessing(
             memory=None,
         )
         pca_pipe.fit(x_train_num)
+        progress.set_postfix_str("Entrenando PCA")
+        progress.update(1)
 
         t_train = pca_pipe.transform(x_train_num)
         t_test = pca_pipe.transform(x_test_num)
@@ -352,6 +367,8 @@ def preprocessing(
             k_elbow=k_elbow,
             show_plots=show_plots,
         )
+        progress.set_postfix_str("Generando graficos PCA")
+        progress.update(1)
 
         df_train_cat_encode = df_train_cat_encode.reindex(t_train_df.index)
         df_test_cat_encode = df_test_cat_encode.reindex(t_test_df.index)
@@ -406,6 +423,8 @@ def preprocessing(
             for path in candidates:
                 if path.exists():
                     zip_file.write(path, arcname=os.path.basename(path))
+        progress.set_postfix_str("Guardando artefactos")
+        progress.update(1)
 
         diagnostico = []
         for col in cols_num:
@@ -441,10 +460,15 @@ def preprocessing(
             file.write("- pca_pipe_num.joblib\n")
             file.write("- pca_metadata.json\n")
 
+        progress.set_postfix_str("Completado")
+        progress.update(1)
+
         return True
     except Exception as error:
         print(f"Error en preprocessing: {error}")
         return False
+    finally:
+        progress.close()
 
 if __name__ == "__main__":
     preprocessing()

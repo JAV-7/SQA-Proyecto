@@ -21,6 +21,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
+from tqdm import tqdm
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 PREPROCESSING_DIR = BASE_DIR / "Preprocessing"
@@ -49,11 +50,13 @@ def preprocessing_production(
 ) -> bool:
     """Ejecuta el preprocesamiento de producción y retorna True/False."""
     _ensure_output_dirs()
+    progress = tqdm(total=6, desc="Preprocessing Prod", unit="paso")
 
     input_path = Path(input_csv_path) if input_csv_path else INPUT_DEFAULT_PATH
     output_path = Path(output_csv_path) if output_csv_path else OUTPUT_DEFAULT_PATH
 
     try:
+        progress.set_postfix_str("Cargando artefactos")
         preprocessor_cat = joblib.load(PREPROCESSING_DIR / "preprocessor_cat.joblib")
         pca_pipe = joblib.load(PREPROCESSING_DIR / "pca_pipe_num.joblib")
 
@@ -64,11 +67,14 @@ def preprocessing_production(
         cols_cat = meta["cols_cat"]
         pc_cols = meta["pc_cols"]
         cat_out_cols = meta["cat_out_cols"]
+        progress.update(1)
 
+        progress.set_postfix_str("Leyendo datasets")
         entrenamiento = pd.read_csv(PREPROCESSING_DIR / "T_train_final_objetivo.csv")
         entrenamiento_pca_objetivo = entrenamiento[pc_cols]
 
         new_df = pd.read_csv(input_path)
+        progress.update(1)
 
         x_new_cat = new_df[cols_cat]
         x_new_num = new_df[cols_num]
@@ -82,10 +88,14 @@ def preprocessing_production(
 
         t_new = pca_pipe.transform(x_new_num)
         t_new_df = pd.DataFrame(t_new, columns=pc_cols, index=new_df.index)
+        progress.set_postfix_str("Transformando nuevos datos")
+        progress.update(1)
 
         t_new_final = pd.concat([t_new_df, df_new_cat_encode], axis=1)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         t_new_final.to_csv(output_path, index=False)
+        progress.set_postfix_str("Guardando salida CSV")
+        progress.update(1)
 
         y_train = entrenamiento["objetivo"]
         df_plot2 = entrenamiento_pca_objetivo.iloc[:, :2].copy()
@@ -153,6 +163,8 @@ def preprocessing_production(
 
         if save_plots:
             fig3.write_html(PLOT_3D_DEFAULT_PATH)
+        progress.set_postfix_str("Generando visualizaciones")
+        progress.update(1)
 
         with open(REPORT_DEFAULT_PATH, "w", encoding="utf-8") as file:
             file.write("Preprocessing Production Report\n")
@@ -163,10 +175,15 @@ def preprocessing_production(
             file.write(f"Registros procesados: {len(t_new_final)}\n")
             file.write(f"Columnas finales: {list(t_new_final.columns)}\n")
 
+        progress.set_postfix_str("Completado")
+        progress.update(1)
+
         return True
     except Exception as error:
         print(f"Error en preprocessing_production: {error}")
         return False
+    finally:
+        progress.close()
 
 if __name__ == "__main__":
     preprocessing_production()

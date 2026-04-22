@@ -38,10 +38,19 @@ import json
 import time
 import os
 import zipfile
+from tqdm import tqdm
 
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[3]
+MODULE_DIR = Path(__file__).resolve().parent
+SRC_DIR = BASE_DIR / "src"
+FILES_DIR = SRC_DIR / "files"
+RANDOM_FOREST_FILES_DIR = FILES_DIR / "random_forest"
+MODEL_PATH = MODULE_DIR / "modelo_random_forest.pkl"
+EXPECTED_COLUMNS_PATH = RANDOM_FOREST_FILES_DIR / "expected_columns.json"
+FEATURE_IMPORTANCE_PATH = RANDOM_FOREST_FILES_DIR / "feature_importance.csv"
+ARTIFACTS_DIR = MODULE_DIR / "mi_random_forest"
 
 SEP = "___"
 
@@ -71,22 +80,28 @@ def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
 
 def random_forest() -> bool:
     """Ejecuta el entrenamiento de Random Forest y retorna True/False."""
+    progress = tqdm(total=6, desc="Random Forest", unit="paso")
     try:
+        RANDOM_FOREST_FILES_DIR.mkdir(parents=True, exist_ok=True)
+        progress.set_postfix_str("Cargando train/test")
         train_df = pd.read_csv(
-            BASE_DIR / "src" / "01_Preprocessing" / "Preprocessing" / "T_train_final_objetivo.csv"
+            SRC_DIR / "01_Preprocessing" / "Preprocessing" / "T_train_final_objetivo.csv"
         )
         test_df = pd.read_csv(
-            BASE_DIR / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
+            SRC_DIR / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
         )
 
         X_train = train_df.iloc[:, :-1]
         y_train = train_df.iloc[:, -1].to_numpy(dtype=float)
         X_test = test_df.iloc[:, :-1]
         y_test = test_df.iloc[:, -1].to_numpy(dtype=float)
+        progress.update(1)
 
         # 1) --- PRECOMPUTA CON TRAIN ---
         blocks = build_nominal_blocks_by_prefix(X_train, SEP)
         drop_cols = [cols[0] for cols in blocks.values() if len(cols) >= 2]  # primera de cada bloque
+        progress.set_postfix_str("Preparando pipeline")
+        progress.update(1)
 
         # 2) --- PIPELINE CON RANDOM FOREST ---
         arreglar_despeje = ColumnTransformer(
@@ -96,23 +111,28 @@ def random_forest() -> bool:
             force_int_remainder_cols=False
         )
 
-        mi_random_forest = Pipeline([
-            ("dropper", arreglar_despeje),
-            ("rf", RandomForestRegressor(
-                n_estimators=100,
-                max_depth=20,
-                min_samples_split=20,
-                min_samples_leaf=3,
-                max_features="sqrt",
-                random_state=42,
-                n_jobs=-1
-            )),
-        ])
+        mi_random_forest = Pipeline(
+            [
+                ("dropper", arreglar_despeje),
+                ("rf", RandomForestRegressor(
+                    n_estimators=100,
+                    max_depth=20,
+                    min_samples_split=20,
+                    min_samples_leaf=3,
+                    max_features="sqrt",
+                    random_state=42,
+                    n_jobs=-1
+                )),
+            ],
+            memory=None,
+        )
 
         # 3) --- FIT & PRED ---
         print("Training random forest")
         mi_random_forest.fit(X_train, y_train)
         print("Training completed")
+        progress.set_postfix_str("Entrenando modelo")
+        progress.update(1)
 
         feature_importances = mi_random_forest.named_steps["rf"].feature_importances_
         feature_names = mi_random_forest.named_steps["dropper"].get_feature_names_out(X_train.columns)
@@ -144,40 +164,45 @@ def random_forest() -> bool:
         print(f"  RMSE: {np.sqrt(mean_squared_error(y_test, y_test_pred)):.4f}")
         print(f"  MAE: {mean_absolute_error(y_test, y_test_pred):.4f}")
 
-        joblib.dump(mi_random_forest, "modelo_random_forest.pkl")
+        joblib.dump(mi_random_forest, MODEL_PATH)
 
         expected_cols = X_train.columns.tolist()
-        with open("expected_columns.json", "w", encoding="utf-8") as f:
+        with open(EXPECTED_COLUMNS_PATH, "w", encoding="utf-8") as f:
             json.dump({"columns": expected_cols, "saved_at": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
 
-        importance_df.to_csv("feature_importance.csv", index=False)
+        importance_df.to_csv(FEATURE_IMPORTANCE_PATH, index=False)
 
         print("\nSaved artefacts:")
         print("  - modelo_random_forest.pkl")
         print("  - expected_columns.json")
         print("  - feature_importance.csv")
+        progress.set_postfix_str("Guardando artefactos")
+        progress.update(1)
 
-        dst_dir = r"mi_random_forest"
-        os.makedirs(dst_dir, exist_ok=True)
-        zip_path = os.path.join(dst_dir, "mi_random_forest_artifacts_bundle.zip")
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        zip_path = ARTIFACTS_DIR / "mi_random_forest_artifacts_bundle.zip"
 
         candidates = [
-            "modelo_random_forest.pkl",
-            "expected_columns.json",
-            "feature_importance.csv",
+            MODEL_PATH,
+            EXPECTED_COLUMNS_PATH,
+            FEATURE_IMPORTANCE_PATH,
         ]
-        present = [f for f in candidates if os.path.exists(f)]
+        present = [f for f in candidates if Path(f).exists()]
 
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for f in present:
-                zf.write(f, arcname=os.path.basename(f))
+                zf.write(f, arcname=Path(f).name)
 
         print("\nZIP creado en:", zip_path)
         print("Incluidos:", present)
+        progress.set_postfix_str("Completado")
+        progress.update(2)
         return True
     except Exception as error:
         print(f"Error in random forest: {error}")
         return False
+    finally:
+        progress.close()
 
 if __name__ == "__main__":
     random_forest()

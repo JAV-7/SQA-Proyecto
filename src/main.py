@@ -19,13 +19,18 @@ V 0.0
 """
 
 import subprocess
+import sys
+from pathlib import Path
+from tqdm import tqdm
 
 from paths import (
     DATA_CLEAN_PATH,
+    PREPROCESSING_PATH,
     LINEAL_REGRESSION_PATH,
     RANDOM_FOREST_PATH,
     MODEL_EVALUATION_PATH,
     REGULARIZATION_PATH,
+    PREPROCESSING_PROD_PATH,
     LINEAL_REGRESSION_PROD_PATH,
     RANDOM_FOREST_PROD_PATH,
     REGULARIZATION_PROD_PATH
@@ -39,36 +44,47 @@ def welcome_message():
 def main() -> bool:
     """Ejecuta cada etapa del pipeline en orden"""
     welcome_message()
+    python_exe = sys.executable # Asegurar que se ejecute con el mismo intérprete de Python
+    src_dir = Path(__file__).resolve().parent
 
-    stages_training = [
+    stages = [
         ("Data Clean", DATA_CLEAN_PATH),
+        ("Preprocessing", PREPROCESSING_PATH),
+        ("Preprocessing Production", PREPROCESSING_PROD_PATH),
         ("Lineal Regression", LINEAL_REGRESSION_PATH),
+        ("Lineal Regression Production", LINEAL_REGRESSION_PROD_PATH),
         ("Random Forest", RANDOM_FOREST_PATH),
-        ("Model Evaluation", MODEL_EVALUATION_PATH),
-        ("Regularization", REGULARIZATION_PATH)
-    ]
-
-    stages_production = [
-        ("Data Clean", DATA_CLEAN_PATH),
-        ("Lineal Regression", LINEAL_REGRESSION_PROD_PATH),
         ("Random Forest", RANDOM_FOREST_PROD_PATH),
         ("Model Evaluation", MODEL_EVALUATION_PATH),
-        ("Regularization", REGULARIZATION_PROD_PATH)
+        ("Regularization", REGULARIZATION_PATH),
+        ("Regularization Production", REGULARIZATION_PROD_PATH)
+
     ]
 
-    for stage_name, stage_script in stages_training:
-        print(f"\n=== Ejecutando etapa de entrenamiento: {stage_name} ===")
-        result = subprocess.run(["python", stage_script], capture_output=True, text=True)
-        print(result.stdout)
-        if result.returncode != 0:
-            print(f"Error en etapa {stage_name}: {result.stderr}")
-            return False
 
-    for stage_name, stage_script in stages_production:
-        print(f"\n=== Ejecutando etapa de producción: {stage_name} ===")
-        result = subprocess.run(["python", stage_script], capture_output=True, text=True)
-        print(result.stdout)
+    if tqdm:
+        stage_iterable = tqdm(stages, total=len(stages), desc="Pipeline", unit="etapa")
+    else:
+        stage_iterable = stages
+
+    for stage_name, stage_script in stage_iterable:
+        stage_path = src_dir / stage_script
+
+        if tqdm and hasattr(stage_iterable, "set_postfix_str"):
+            stage_iterable.set_postfix_str(stage_name)
+
+        print(f"\n=== Ejecutando etapa de: {stage_name} ===")
+        result = subprocess.run(
+            [python_exe, str(stage_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(src_dir),
+        )
+        if result.stdout:
+            print(result.stdout)
         if result.returncode != 0:
+            if tqdm and hasattr(stage_iterable, "close"):
+                stage_iterable.close()
             print(f"Error en etapa {stage_name}: {result.stderr}")
             return False
 

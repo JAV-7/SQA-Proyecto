@@ -30,6 +30,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 # 1. Cargar Datos y Modelos
@@ -61,12 +62,15 @@ def calcular_metricas(y_real, y_pred, nombre_modelo):
 
 def model_evaluation() -> bool:
     """Ejecuta la evaluación de modelos y retorna True/False."""
+    progress = tqdm(total=5, desc="Model Evaluation", unit="paso")
     try:
+        progress.set_postfix_str("Cargando test")
         path_data = PROJECT_ROOT / "src" / "01_Preprocessing" / "Preprocessing" / "T_test_final_objetivo.csv"
         df_test = pd.read_csv(path_data)
 
         X_test = df_test.drop(columns=["objetivo"])
         y_test = df_test["objetivo"]
+        progress.update(1)
 
         print(f"Datos de test: {X_test.shape[0]} muestras, {X_test.shape[1]} features")
         print(f"Variable objetivo - Min: {y_test.min():.2f}, Max: {y_test.max():.2f}, Media: {y_test.mean():.2f}")
@@ -76,9 +80,13 @@ def model_evaluation() -> bool:
 
         path_rf = PROJECT_ROOT / "src" / "03_Random_Forest" / "Random_Forest" / "modelo_random_forest.pkl"
         modelo_rf = joblib.load(path_rf)
+        progress.set_postfix_str("Cargando modelos")
+        progress.update(1)
 
+        progress.set_postfix_str("Generando predicciones")
         y_pred_lineal = modelo_lineal.predict(X_test)
         y_pred_rf = modelo_rf.predict(X_test)
+        progress.update(1)
 
         print(f"Predicciones Regresión Lineal - Min: {y_pred_lineal.min():.2f}, Max: {y_pred_lineal.max():.2f}")
         print(f"Predicciones Random Forest - Min: {y_pred_rf.min():.2f}, Max: {y_pred_rf.max():.2f}")
@@ -127,6 +135,8 @@ def model_evaluation() -> bool:
         plt.tight_layout()
         plt.savefig("comparacion_modelos.png", dpi=150)
         plt.show()
+        progress.set_postfix_str("Construyendo reporte")
+        progress.update(1)
 
         print("Gráfico guardado: comparacion_modelos.png")
 
@@ -184,10 +194,14 @@ def model_evaluation() -> bool:
         ruta_csv = PROJECT_ROOT / "src" / "reports" / "metricas_comparativas.csv"
         df_metricas.to_csv(ruta_csv)
         print(f"Resultados guardados en:\n- {ruta_grafica}\n- {ruta_csv}")
+        progress.set_postfix_str("Completado")
+        progress.update(1)
         return True
     except Exception as error:
         print(f"Error in model evaluation: {error}")
         return False
+    finally:
+        progress.close()
 
 if __name__ == "__main__":
     model_evaluation()

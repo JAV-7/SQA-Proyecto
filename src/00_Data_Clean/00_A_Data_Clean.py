@@ -24,10 +24,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from pathlib import Path
+import sys
+from tqdm import tqdm
 
-from src.Common_Functions.Columns import get_columns
+SRC_DIR = Path(__file__).resolve().parents[1]
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+from Common_Functions.Columns import get_columns
+
+BASE_DIR = SRC_DIR
 REPORTS_DIR = BASE_DIR / "reports"
 GRAPHICS_DIR = BASE_DIR / "graphics"
 FILES_DIR = BASE_DIR / "files"
@@ -232,24 +238,35 @@ def save_clean_data(df: pd.DataFrame) -> bool:
         return False
 
 def data_clean() -> bool:
+    progress = tqdm(total=4, desc="Data Clean", unit="paso")
     try: 
+        progress.set_postfix_str("Cargando dataset")
         df = pd.read_csv(BASE_DIR / "files" / "retail_store_inventory.csv")
+        progress.update(1)
 
+        progress.set_postfix_str("Generando insights")
         print("Generando insights...")
         get_initial_insights(df)
+        progress.update(1)
 
+        progress.set_postfix_str("Limpiando datos")
         print("Limpiando datos...")
         df_clean = clean_data(df)
+        progress.update(1)
 
         if df_clean is not None:
+            progress.set_postfix_str("Guardando salidas")
             print("Guardando datos...")
             save_clean_data(df_clean)
+        progress.update(1)
 
         print("Proceso terminado")
         return True
     except Exception as error:
         print(f"Error en data_clean: {error}")
         return False
+    finally:
+        progress.close()
     
 if __name__ == "__main__":
     data_clean()

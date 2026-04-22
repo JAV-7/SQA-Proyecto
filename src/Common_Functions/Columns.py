@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 def get_columns(df : pd.DataFrame) -> tuple:
     """
     Obtiene las columnas del DataFrame y las categoriza en numericas

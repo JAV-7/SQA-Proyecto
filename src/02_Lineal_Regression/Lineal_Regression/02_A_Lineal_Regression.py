@@ -29,6 +29,7 @@ import numpy as np
 import os, zipfile
 import joblib, json, time
 from pathlib import Path
+from tqdm import tqdm
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
@@ -45,6 +46,7 @@ MODEL_DIR = MODULE_DIR / "regression_lineal"
 REPORTS_DIR = SRC_DIR / "reports"
 GRAPHICS_DIR = SRC_DIR / "graphics"
 FILES_DIR = SRC_DIR / "files"
+LINEAR_FILES_DIR = FILES_DIR / "lineal_regression"
 
 INPUT_DEFAULT_PATH = FILES_DIR / "retail_store_inventory_entrenamiento.csv"
 REPORT_PATH = REPORTS_DIR / "01_a_preprocessing_report.txt"
@@ -56,6 +58,7 @@ def _ensure_output_dirs() -> None:
     GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
     FILES_DIR.mkdir(parents=True, exist_ok=True)
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    LINEAR_FILES_DIR.mkdir(parents=True, exist_ok=True)
 
 SEP = "___"  # Con esto encuentra las columnas Categoricas (One Hot)
 
@@ -84,11 +87,14 @@ def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
 
 def lineal_regression()-> bool:
     """Ejecuta el entrenamiento de regresión lineal y retorna True/False."""
+    progress = tqdm(total=6, desc="Lineal Regression", unit="paso")
     try:
         _ensure_output_dirs()
 
+        progress.set_postfix_str("Cargando train/test")
         train_df = pd.read_csv(PREPROCESSING_DIR / "T_train_final_objetivo.csv")
         test_df = pd.read_csv(PREPROCESSING_DIR / "T_test_final_objetivo.csv")
+        progress.update(1)
 
 
         X_train = train_df.iloc[:, :-1]
@@ -100,6 +106,8 @@ def lineal_regression()-> bool:
         # 1) --- PRECOMPUTA CON TRAIN ---
         blocks = build_nominal_blocks_by_prefix(X_train, SEP)
         drop_cols = [cols[0] for cols in blocks.values() if len(cols) >= 2]  # primera de cada bloque
+        progress.set_postfix_str("Preparando pipeline")
+        progress.update(1)
 
         # 2) --- PIPELINE SIN CLASES (usa ColumnTransformer para dropear fijo) ---
         arreglar_despeje = ColumnTransformer(
@@ -116,6 +124,8 @@ def lineal_regression()-> bool:
 
         # 3) --- FIT & PRED ---
         mi_regresion_lineal.fit(X_train, y_train)
+        progress.set_postfix_str("Entrenando modelo")
+        progress.update(1)
 
 
         # Intercepto y coeficientes del modelo dentro del pipeline
@@ -132,7 +142,7 @@ def lineal_regression()-> bool:
 
         # guarda el pipeline completo (dropper + LinearRegression)
         model_path = MODEL_DIR / "modelo_reg_lineal.pkl"
-        expected_columns_path = MODEL_DIR / "expected_columns.json"
+        expected_columns_path = LINEAR_FILES_DIR / "expected_columns.json"
         joblib.dump(mi_regresion_lineal, model_path)
 
         # guarda el orden/esperado de columnas de entrenamiento
@@ -166,6 +176,8 @@ def lineal_regression()-> bool:
 
         print("ZIP creado en:", zip_path)
         print("Incluidos:", present)
+        progress.set_postfix_str("Guardando artefactos")
+        progress.update(1)
 
         # Evaluación en train y test
         y_train_pred = mi_regresion_lineal.predict(X_train)
@@ -182,10 +194,15 @@ def lineal_regression()-> bool:
         print(f"  RMSE: {np.sqrt(mean_squared_error(y_test, y_test_pred)):.4f}")
         print(f"  MAE: {mean_absolute_error(y_test, y_test_pred):.4f}")
 
+        progress.set_postfix_str("Completado")
+        progress.update(2)
+
         return True
     except Exception as error:
         print(f"Error in lineal regression: {error}")
         return False
+    finally:
+        progress.close()
 
 if __name__ == "__main__":
     lineal_regression()
