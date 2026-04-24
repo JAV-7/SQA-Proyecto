@@ -220,9 +220,6 @@ def lineal_regression() -> bool:
     except ValueError as val_error:
         print(f"Error de valor: {val_error}")
         return False
-    except pd.errors.ParserError as parse_error:
-        print(f"Error al parsear CSV: {parse_error}")
-        return False
     finally:
         progress.close()
 
