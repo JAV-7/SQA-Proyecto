@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+
 
 def iqr_outlier_stats(series: pd.Series) -> tuple[int, float]:
     series = pd.to_numeric(series, errors="coerce").dropna()

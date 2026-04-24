@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 """
 Random Forest Production
@@ -19,11 +18,11 @@ V 0.0
 """
 
 # ===== Carga del modelo y predicción en datos nuevos =====
+import json
 from pathlib import Path
 
-import pandas as pd
 import joblib
-import json
+import pandas as pd
 from tqdm import tqdm
 
 SRC_DIR = Path(__file__).resolve().parents[2]
@@ -39,10 +38,12 @@ RANDOM_FOREST_DIR = Path(__file__).resolve().parents[1] / "Random_Forest"
 MODEL_PATH = RANDOM_FOREST_DIR / "modelo_random_forest.pkl"
 COLS_PATH = RANDOM_FOREST_FILES_DIR / "expected_columns.json"
 
+
 # Cargar artefactos
-def random_forest_production()-> bool:
+def random_forest_production() -> bool:
     """Ejecuta la predicción con el modelo de Random
-    Forest en producción y retorna True/False."""
+    Forest en producción y retorna True/False.
+    """
     progress = tqdm(total=4, desc="Random Forest Prod", unit="paso")
     try:
         progress.set_postfix_str("Cargando artefactos")
@@ -51,7 +52,7 @@ def random_forest_production()-> bool:
             return False
 
         modelo = joblib.load(MODEL_PATH)
-        with open(COLS_PATH, "r", encoding="utf-8") as f:
+        with open(COLS_PATH, encoding="utf-8") as f:
             expected_cols = json.load(f)["columns"]
         df_nuevo = pd.read_csv(INPUT_CSV_PATH)
         progress.update(1)
@@ -80,8 +81,6 @@ def random_forest_production()-> bool:
     finally:
         progress.close()
 
+
 if __name__ == "__main__":
     random_forest_production()
-
-
-

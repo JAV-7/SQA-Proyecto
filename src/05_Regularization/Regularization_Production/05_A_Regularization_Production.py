@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Regularization Production
 
@@ -17,16 +16,18 @@ Creditos especiales: Sofia Vanessa Noyola,
 V 0.0
 """
 
-import pandas as pd
-import joblib
 import json
 from pathlib import Path
+
+import joblib
+import pandas as pd
 from tqdm import tqdm
 
 # 1. Cargar Modelo y Metadata
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 REGULARIZATION_DIR = Path(__file__).resolve().parents[1] / "Regularization"
+
 
 def regularization_production() -> bool:
     """Ejecuta la predicción con el modelo de regularización en producción y retorna True/False."""
@@ -36,7 +37,7 @@ def regularization_production() -> bool:
         bundle_path = REGULARIZATION_DIR / "reg_lin_ganador" / "reg_lin_ganador_bundle"
         modelo = joblib.load(bundle_path / "modelo_elasticnet.pkl")
 
-        with open(bundle_path / "metadata_modelo.json", "r") as f:
+        with open(bundle_path / "metadata_modelo.json") as f:
             metadata = json.load(f)
 
         print(f"Modelo cargado: {metadata['modelo']}")
@@ -75,6 +76,7 @@ def regularization_production() -> bool:
         return False
     finally:
         progress.close()
+
 
 if __name__ == "__main__":
     regularization_production()

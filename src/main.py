@@ -21,30 +21,33 @@ V 0.0
 import subprocess
 import sys
 from pathlib import Path
+
 from tqdm import tqdm
 
 from paths import (
     DATA_CLEAN_PATH,
-    PREPROCESSING_PATH,
     LINEAL_REGRESSION_PATH,
-    RANDOM_FOREST_PATH,
-    MODEL_EVALUATION_PATH,
-    REGULARIZATION_PATH,
-    PREPROCESSING_PROD_PATH,
     LINEAL_REGRESSION_PROD_PATH,
+    MODEL_EVALUATION_PATH,
+    PREPROCESSING_PATH,
+    PREPROCESSING_PROD_PATH,
+    RANDOM_FOREST_PATH,
     RANDOM_FOREST_PROD_PATH,
-    REGULARIZATION_PROD_PATH
+    REGULARIZATION_PATH,
+    REGULARIZATION_PROD_PATH,
 )
+
 
 def welcome_message():
     print("Bienvenidos al pipeline de ML para el proyecto de Calidad de Software")
     print("Ejecutando cada etapa en orden: Data Clean -> Lineal Regression -> Random Forest -> Regularization")
     print("Cada etapa imprimirá su progreso y resultados. Al finalizar, se mostrarán las predicciones finales en producción.")
 
+
 def main() -> bool:
     """Ejecuta cada etapa del pipeline en orden"""
     welcome_message()
-    python_exe = sys.executable # Asegurar que se ejecute con el mismo intérprete de Python
+    python_exe = sys.executable  # Asegurar que se ejecute con el mismo intérprete de Python
     src_dir = Path(__file__).resolve().parent
 
     stages = [
@@ -60,7 +63,6 @@ def main() -> bool:
         ("Regularization Production", REGULARIZATION_PROD_PATH)
 
     ]
-
 
     stage_iterable = tqdm(stages, total=len(stages), desc="Pipeline", unit="etapa")
 
@@ -86,7 +88,8 @@ def main() -> bool:
             return False
 
     print("\n=== Todas las etapas completadas exitosamente ===")
-    return True 
+    return True
+
 
 if __name__ == "__main__":
     main()

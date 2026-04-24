@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Model Evaluation
 
@@ -26,17 +25,16 @@ Creditos especiales: Sofia Vanessa Noyola,
 V 0.0
 """
 
-import pandas as pd
-import numpy as np
-import joblib
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-
 # 1. Cargar Datos y Modelos
-
 # Cargar datos de test
 from pathlib import Path
+
+import joblib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -98,11 +96,11 @@ def model_evaluation() -> bool:
         df_metricas = df_metricas.set_index("Modelo")
         df_metricas = df_metricas.round(4)
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("TABLA COMPARATIVA DE MODELOS")
-        print("="*60)
+        print("=" * 60)
         print(df_metricas.to_string())
-        print("="*60)
+        print("=" * 60)
 
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
@@ -144,9 +142,9 @@ def model_evaluation() -> bool:
         mejor_rmse = "Random Forest" if metricas_rf["RMSE"] < metricas_lineal["RMSE"] else "Regresión Lineal"
         mejor_mae = "Random Forest" if metricas_rf["MAE"] < metricas_lineal["MAE"] else "Regresión Lineal"
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("CONCLUSIÓN")
-        print("="*60)
+        print("=" * 60)
         print(f"\nMejor R²: {mejor_r2}")
         print(f"Mejor RMSE: {mejor_rmse}")
         print(f"Mejor MAE: {mejor_mae}")
@@ -202,6 +200,7 @@ def model_evaluation() -> bool:
         return False
     finally:
         progress.close()
+
 
 if __name__ == "__main__":
     model_evaluation()

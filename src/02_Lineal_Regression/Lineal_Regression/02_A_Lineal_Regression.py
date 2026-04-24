@@ -24,19 +24,20 @@ Creditos especiales: Sofia Vanessa Noyola,
 V 0.0 
 """
 
-import pandas as pd
-import numpy as np
-import os, zipfile
-import joblib, json, time
+import json
+import os
+import time
+import zipfile
 from pathlib import Path
-from tqdm import tqdm
+
+import joblib
+import numpy as np
+import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-
-
-
+from tqdm import tqdm
 
 SRC_DIR = Path(__file__).resolve().parents[2]
 TRAINING_DIR = Path(__file__).resolve().parent
@@ -53,12 +54,13 @@ REPORT_PATH = REPORTS_DIR / "01_a_preprocessing_report.txt"
 
 
 def _ensure_output_dirs() -> None:
-    """ Crea los directorios de salida si no existen. """
+    """Crea los directorios de salida si no existen."""
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
     FILES_DIR.mkdir(parents=True, exist_ok=True)
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     LINEAR_FILES_DIR.mkdir(parents=True, exist_ok=True)
+
 
 SEP = "___"  # Con esto encuentra las columnas Categoricas (One Hot)
 
@@ -85,7 +87,8 @@ def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
         blocks[k] = [c for c in X.columns if c in set(v)]
     return blocks
 
-def lineal_regression()-> bool:
+
+def lineal_regression() -> bool:
     """Ejecuta el entrenamiento de regresión lineal y retorna True/False."""
     progress = tqdm(total=6, desc="Lineal Regression", unit="paso")
     try:
@@ -96,13 +99,12 @@ def lineal_regression()-> bool:
         test_df = pd.read_csv(PREPROCESSING_DIR / "T_test_final_objetivo.csv")
         progress.update(1)
 
-
         X_train = train_df.iloc[:, :-1]
         y_train = train_df.iloc[:, -1].to_numpy(dtype=float)
 
         X_test = test_df.iloc[:, :-1]
         y_test = test_df.iloc[:, -1].to_numpy(dtype=float)
-        
+
         # 1) --- PRECOMPUTA CON TRAIN ---
         blocks = build_nominal_blocks_by_prefix(X_train, SEP)
         drop_cols = [cols[0] for cols in blocks.values() if len(cols) >= 2]  # primera de cada bloque
@@ -127,7 +129,6 @@ def lineal_regression()-> bool:
         progress.set_postfix_str("Entrenando modelo")
         progress.update(1)
 
-
         # Intercepto y coeficientes del modelo dentro del pipeline
         intercepto = mi_regresion_lineal.named_steps["linreg"].intercept_
         coefs = mi_regresion_lineal.named_steps["linreg"].coef_
@@ -151,7 +152,6 @@ def lineal_regression()-> bool:
             json.dump({"columns": expected_cols, "saved_at": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
 
         print("Artefactos guardados:", model_path, expected_columns_path)
-
 
         # Carpeta destino en tu PC
         dst_dir = MODEL_DIR
@@ -204,6 +204,6 @@ def lineal_regression()-> bool:
     finally:
         progress.close()
 
+
 if __name__ == "__main__":
     lineal_regression()
-

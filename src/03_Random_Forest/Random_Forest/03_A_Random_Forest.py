@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Random Forest
 
@@ -27,20 +26,19 @@ Creditos especiales: Sofia Vanessa Noyola,
 V 0.0
 """
 
-import pandas as pd
-import numpy as np
-from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-import joblib
 import json
 import time
-import os
 import zipfile
-from tqdm import tqdm
-
 from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.pipeline import Pipeline
+from tqdm import tqdm
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 MODULE_DIR = Path(__file__).resolve().parent
@@ -53,6 +51,7 @@ FEATURE_IMPORTANCE_PATH = RANDOM_FOREST_FILES_DIR / "feature_importance.csv"
 ARTIFACTS_DIR = MODULE_DIR / "mi_random_forest"
 
 SEP = "___"
+
 
 # Funciones auxiliares
 def is_binary_series(s: pd.Series):
@@ -203,6 +202,7 @@ def random_forest() -> bool:
         return False
     finally:
         progress.close()
+
 
 if __name__ == "__main__":
     random_forest()

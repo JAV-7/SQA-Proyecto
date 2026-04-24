@@ -1,5 +1,5 @@
 """
-Preprocessing (Training)
+Preprocessing (Training).
 
 Este modulo prepara datos de entrenamiento/prueba, entrena el encoder
 categorico y el pipeline numerico con PCA, y exporta artefactos para
@@ -14,37 +14,37 @@ Docente: Sarahi Partida Ochoa
 
 Creditos especiales: Sofia Vanessa Noyola,
                      Sebastian Garcia-Moreno Zinchenko,
-                     Mtro. Miguel Tlapa           
+                     Mtro. Miguel Tlapa
 
-V 0.0 
+V 0.0
 """
 
-from pathlib import Path
 import json
 import math
 import os
 import sys
 import zipfile
+from dataclasses import dataclass
+from pathlib import Path
 
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from tqdm import tqdm
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
+from tqdm import tqdm
+
+from Common_Functions.IQR import iqr_outlier_stats
 
 SRC_DIR = Path(__file__).resolve().parents[2]
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
-
-from Common_Functions.IQR import iqr_outlier_stats
-
 
 PREPROCESSING_DIR = Path(__file__).resolve().parent
 REPORTS_DIR = SRC_DIR / "reports"
@@ -53,6 +53,19 @@ FILES_DIR = SRC_DIR / "files"
 
 INPUT_DEFAULT_PATH = FILES_DIR / "retail_store_inventory_entrenamiento.csv"
 REPORT_PATH = REPORTS_DIR / "01_a_preprocessing_report.txt"
+MIN_COMPONENTS_FOR_3D_PCA_PLOT = 3
+
+
+@dataclass(frozen=True)
+class PcaPlotContext:
+    """Agrupa parametros del PCA para simplificar firma de funciones."""
+
+    explained_ratio: np.ndarray
+    cumulative_ratio: np.ndarray
+    k90: int
+    k95: int
+    k_elbow: int
+    show_plots: bool
 
 
 def _ensure_output_dirs() -> None:
@@ -73,7 +86,11 @@ def _save_numeric_diagnostic_plots(df_num: pd.DataFrame) -> None:
     ncols = min(3, n)
     nrows = math.ceil(n / ncols)
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 3.8 * nrows))
+    fig, axes = plt.subplots(
+        nrows=nrows,
+        ncols=ncols,
+        figsize=(5 * ncols, 3.8 * nrows),
+    )
     axes = np.atleast_1d(axes).ravel()
 
     for index, col in enumerate(cols_num):
@@ -94,7 +111,11 @@ def _save_numeric_diagnostic_plots(df_num: pd.DataFrame) -> None:
 
     fig.suptitle("Histogramas de columnas numericas", y=1.02, fontsize=12)
     fig.tight_layout()
-    fig.savefig(GRAPHICS_DIR / "01_a_histogramas_numericas.png", dpi=150, bbox_inches="tight")
+    fig.savefig(
+        GRAPHICS_DIR / "01_a_histogramas_numericas.png",
+        dpi=150,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     series_pairs: list[tuple[str, np.ndarray]] = []
@@ -111,25 +132,31 @@ def _save_numeric_diagnostic_plots(df_num: pd.DataFrame) -> None:
 
     fig2 = plt.figure(figsize=(1.6 * len(labels) + 4, 5))
     plt.boxplot(values, vert=True, showmeans=True)
-    plt.xticks(ticks=range(1, len(labels) + 1), labels=labels, rotation=35, ha="right")
+    plt.xticks(
+        ticks=range(1, len(labels) + 1),
+        labels=labels,
+        rotation=35,
+        ha="right",
+    )
     plt.ylabel("Valor")
     plt.title("Boxplots de columnas numericas")
     plt.tight_layout()
-    fig2.savefig(GRAPHICS_DIR / "01_a_boxplots_numericas.png", dpi=150, bbox_inches="tight")
+    fig2.savefig(
+        GRAPHICS_DIR / "01_a_boxplots_numericas.png",
+        dpi=150,
+        bbox_inches="tight",
+    )
     plt.close(fig2)
 
 
 def _save_pca_plots(
     t_train_df: pd.DataFrame,
     y_train: pd.Series,
-    explained_ratio: np.ndarray,
-    cumulative_ratio: np.ndarray,
-    k90: int,
-    k95: int,
-    k_elbow: int,
-    show_plots: bool,
+    context: PcaPlotContext,
 ) -> None:
     """Genera y guarda gráficos relacionados con PCA."""
+    explained_ratio = context.explained_ratio
+    cumulative_ratio = context.cumulative_ratio
     ks = np.arange(1, len(explained_ratio) + 1)
 
     fig, axs = plt.subplots(1, 2, figsize=(11, 4))
@@ -138,7 +165,8 @@ def _save_pca_plots(
     axs[0].set_ylabel("Varianza explicada")
     axs[0].set_title("Scree plot (codo)")
     axs[0].grid(True, linewidth=0.4, alpha=0.5)
-    axs[0].axvline(k_elbow, linestyle="--", label=f"codo~{k_elbow}")
+    axs[0].axvline(context.k_elbow, linestyle="--",
+                   label=f"codo~{context.k_elbow}")
     axs[0].legend(frameon=False)
 
     axs[1].plot(ks, cumulative_ratio, marker="o")
@@ -147,13 +175,17 @@ def _save_pca_plots(
     axs[1].set_title("Varianza acumulada")
     axs[1].grid(True, linewidth=0.4, alpha=0.5)
     axs[1].axhline(0.90, linestyle="--")
-    axs[1].axvline(k90, linestyle="--")
+    axs[1].axvline(context.k90, linestyle="--")
     axs[1].axhline(0.95, linestyle="--")
-    axs[1].axvline(k95, linestyle="--")
+    axs[1].axvline(context.k95, linestyle="--")
 
     fig.tight_layout()
-    fig.savefig(GRAPHICS_DIR / "01_a_pca_codo_varianza.png", dpi=150, bbox_inches="tight")
-    if show_plots:
+    fig.savefig(
+        GRAPHICS_DIR / "01_a_pca_codo_varianza.png",
+        dpi=150,
+        bbox_inches="tight",
+    )
+    if context.show_plots:
         plt.show()
     plt.close(fig)
 
@@ -171,10 +203,10 @@ def _save_pca_plots(
     fig2.update_traces(marker={"size": 6})
     fig2.update_layout(xaxis_title="PC1", yaxis_title="PC2")
     fig2.write_html(GRAPHICS_DIR / "01_a_pca_2d_train.html")
-    if show_plots:
+    if context.show_plots:
         fig2.show()
 
-    if t_train_df.shape[1] >= 3:
+    if t_train_df.shape[1] >= MIN_COMPONENTS_FOR_3D_PCA_PLOT:
         df_plot3 = t_train_df.iloc[:, :3].copy()
         df_plot3["objetivo"] = y_train.loc[t_train_df.index].astype(str)
         fig3 = px.scatter_3d(
@@ -189,12 +221,16 @@ def _save_pca_plots(
         )
         fig3.update_traces(marker={"size": 5})
         fig3.update_layout(
-            scene={"xaxis_title": "PC1", "yaxis_title": "PC2", "zaxis_title": "PC3"}
+            scene={
+                "xaxis_title": "PC1",
+                "yaxis_title": "PC2",
+                "zaxis_title": "PC3",
+            }
         )
         fig3.write_html(GRAPHICS_DIR / "01_a_pca_3d_train.html")
 
 
-def preprocessing(
+def preprocessing(  # noqa: PLR0914, PLR0915
     input_csv_path: str | Path | None = None,
     test_size: float = 0.25,
     random_state: int = 0,
@@ -245,12 +281,16 @@ def preprocessing(
         _save_numeric_diagnostic_plots(x_train_num)
         progress.update(1)
 
-        cols_onehot = ["Category", "Region", "Holiday/Promotion", "Seasonality"]
+        cols_onehot = [
+            "Category", "Region", "Holiday/Promotion", "Seasonality"
+            ]
         preprocessor_cat = ColumnTransformer(
             transformers=[
                 (
                     "onehot",
-                    OneHotEncoder(sparse_output=False, drop=None, handle_unknown="ignore"),
+                    OneHotEncoder(
+                        sparse_output=False, drop=None, handle_unknown="ignore"
+                        ),
                     cols_onehot,
                 )
             ],
@@ -267,11 +307,16 @@ def preprocessing(
         onehot = preprocessor_cat.named_transformers_.get("onehot")
         rename_map: dict[str, str] = {}
         if onehot is not None:
-            for col, cats in zip(cols_onehot, onehot.categories_):
+            for col, cats in zip(
+                cols_onehot, onehot.categories_, strict=False
+                ):
                 for cat in cats:
                     rename_map[f"{col}_{cat}"] = f"{col}___{cat}"
 
-        cat_out_cols = [rename_map.get(col, col) for col in preprocessor_cat.get_feature_names_out()]
+        cat_out_cols = [
+            rename_map.get(col, col)
+            for col in preprocessor_cat.get_feature_names_out()
+        ]
 
         df_train_cat_encode = pd.DataFrame(
             x_train_cat_proc,
@@ -320,7 +365,8 @@ def preprocessing(
             steps=[
                 ("pre", preprocessor_num),
                 ("std_for_pca", StandardScaler()),
-                ("pca", PCA(n_components=None, svd_solver="full", random_state=random_state)),
+                ("pca", PCA(n_components=None, svd_solver="full",
+                            random_state=random_state)),
             ],
             memory=None,
         )
@@ -341,7 +387,8 @@ def preprocessing(
                 ("std_for_pca", StandardScaler()),
                 (
                     "pca",
-                    PCA(n_components=pca_components, svd_solver="full", random_state=random_state),
+                    PCA(n_components=pca_components, svd_solver="full",
+                        random_state=random_state),
                 ),
             ],
             memory=None,
@@ -354,12 +401,14 @@ def preprocessing(
         t_test = pca_pipe.transform(x_test_num)
 
         pc_cols = [f"PC{i + 1}" for i in range(t_train.shape[1])]
-        t_train_df = pd.DataFrame(t_train, columns=pc_cols, index=x_train_num.index)
-        t_test_df = pd.DataFrame(t_test, columns=pc_cols, index=x_test_num.index)
+        t_train_df = pd.DataFrame(
+            t_train, columns=pc_cols, index=x_train_num.index
+            )
+        t_test_df = pd.DataFrame(
+            t_test, columns=pc_cols, index=x_test_num.index
+            )
 
-        _save_pca_plots(
-            t_train_df=t_train_df,
-            y_train=y_train,
+        pca_context = PcaPlotContext(
             explained_ratio=explained_ratio_full,
             cumulative_ratio=cumulative_ratio_full,
             k90=k90,
@@ -367,6 +416,8 @@ def preprocessing(
             k_elbow=k_elbow,
             show_plots=show_plots,
         )
+        _save_pca_plots(t_train_df=t_train_df, y_train=y_train,
+                        context=pca_context)
         progress.set_postfix_str("Generando graficos PCA")
         progress.update(1)
 
@@ -378,17 +429,35 @@ def preprocessing(
 
         t_train_final_out = t_train_final.copy()
         t_test_final_out = t_test_final.copy()
-        t_train_final_out["objetivo"] = y_train.loc[t_train_final.index].astype(str)
-        t_test_final_out["objetivo"] = y_test.loc[t_test_final.index].astype(str)
+        t_train_final_out["objetivo"] = y_train.loc[
+            t_train_final.index
+        ].astype(str)
+        t_test_final_out["objetivo"] = y_test.loc[
+            t_test_final.index
+        ].astype(str)
 
-        t_train_df.to_csv(PREPROCESSING_DIR / "T_train_PCA.csv", index=False)
-        t_test_df.to_csv(PREPROCESSING_DIR / "T_test_PCA.csv", index=False)
-        t_train_final.to_csv(PREPROCESSING_DIR / "T_train_final.csv", index=False)
-        t_test_final.to_csv(PREPROCESSING_DIR / "T_test_final.csv", index=False)
-        t_train_final_out.to_csv(PREPROCESSING_DIR / "T_train_final_objetivo.csv", index=False)
-        t_test_final_out.to_csv(PREPROCESSING_DIR / "T_test_final_objetivo.csv", index=False)
+        t_train_df.to_csv(
+            PREPROCESSING_DIR / "T_train_PCA.csv", index=False
+            )
+        t_test_df.to_csv(
+            PREPROCESSING_DIR / "T_test_PCA.csv", index=False
+            )
+        t_train_final.to_csv(
+            PREPROCESSING_DIR / "T_train_final.csv", index=False
+            )
+        t_test_final.to_csv(
+            PREPROCESSING_DIR / "T_test_final.csv", index=False
+            )
+        t_train_final_out.to_csv(
+            PREPROCESSING_DIR / "T_train_final_objetivo.csv", index=False
+            )
+        t_test_final_out.to_csv(
+            PREPROCESSING_DIR / "T_test_final_objetivo.csv", index=False
+            )
 
-        joblib.dump(preprocessor_cat, PREPROCESSING_DIR / "preprocessor_cat.joblib")
+        joblib.dump(
+            preprocessor_cat, PREPROCESSING_DIR / "preprocessor_cat.joblib"
+            )
         joblib.dump(pca_pipe, PREPROCESSING_DIR / "pca_pipe_num.joblib")
 
         meta = {
@@ -397,7 +466,9 @@ def preprocessing(
             "pc_cols": pc_cols,
             "cat_out_cols": list(df_train_cat_encode.columns),
         }
-        with open(PREPROCESSING_DIR / "pca_metadata.json", "w", encoding="utf-8") as file:
+        with open(
+            PREPROCESSING_DIR / "pca_metadata.json", "w", encoding="utf-8"
+            ) as file:
             json.dump(meta, file, ensure_ascii=False, indent=2)
 
         artifacts_dir = PREPROCESSING_DIR / "mi_pca"
@@ -419,7 +490,9 @@ def preprocessing(
             GRAPHICS_DIR / "01_a_pca_codo_varianza.png",
         ]
 
-        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(
+            zip_path, "w", compression=zipfile.ZIP_DEFLATED
+            ) as zip_file:
             for path in candidates:
                 if path.exists():
                     zip_file.write(path, arcname=os.path.basename(path))
@@ -432,13 +505,16 @@ def preprocessing(
             diagnostico.append(
                 {
                     "columna": col,
-                    "missing_pct": round(pd.to_numeric(x_train[col], errors="coerce").isna().mean() * 100, 2),
+                    "missing_pct": round(pd.to_numeric(x_train[col],
+                                    errors="coerce").isna().mean() * 100, 2),
                     "outliers_n": outliers_n,
                     "outliers_pct": round(outliers_pct * 100, 2),
                 }
             )
         diag_df = pd.DataFrame(diagnostico)
-        diag_df.to_csv(REPORTS_DIR / "01_a_preprocessing_numeric_diagnostic.csv", index=False)
+        diag_df.to_csv(
+            REPORTS_DIR / "01_a_preprocessing_numeric_diagnostic.csv",
+            index=False)
 
         with open(REPORT_PATH, "w", encoding="utf-8") as file:
             file.write("Preprocessing Report\n")
@@ -464,11 +540,15 @@ def preprocessing(
         progress.update(1)
 
         return True
-    except Exception as error:
-        print(f"Error en preprocessing: {error}")
+    except FileNotFoundError:
+        print(f"Archivo no encontrado: {input_path}")
+        return False
+    except pd.errors.EmptyDataError:
+        print(f"Archivo vacío: {input_path}")
         return False
     finally:
         progress.close()
+
 
 if __name__ == "__main__":
     preprocessing()

@@ -15,9 +15,9 @@ Creditos especiales: Sofia Vanessa Noyola,
 V 0.0 
 """
 
+import json
 from pathlib import Path
 
-import json
 import joblib
 import pandas as pd
 from tqdm import tqdm
@@ -38,7 +38,7 @@ def lineal_regression_production() -> bool:
         # Cargar modelo y columnas esperadas
         progress.set_postfix_str("Cargando artefactos")
         modelo = joblib.load(MODEL_DIR / "modelo_reg_lineal.pkl")
-        with open(LINEAR_FILES_DIR / "expected_columns.json", "r", encoding="utf-8") as f:
+        with open(LINEAR_FILES_DIR / "expected_columns.json", encoding="utf-8") as f:
             expected_cols = json.load(f)["columns"]
         progress.update(1)
 
@@ -76,4 +76,3 @@ def lineal_regression_production() -> bool:
 
 if __name__ == "__main__":
     lineal_regression_production()
-

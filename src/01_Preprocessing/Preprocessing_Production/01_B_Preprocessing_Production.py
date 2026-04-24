@@ -1,5 +1,5 @@
 """
-Preprocessing Production
+Preprocessing Production.
 
 Estudiantes: Francisco Javier Ramos Jimenez,
              Karen Elizabeth Gonzalez Santana
@@ -10,17 +10,18 @@ Docente: Sarahi Partida Ochoa
 
 Creditos especiales: Sofia Vanessa Noyola,
                      Sebastian Garcia-Moreno Zinchenko,
-                     Mtro. Miguel Tlapa           
+                     Mtro. Miguel Tlapa
 
-V 0.0 
+V 0.1
 """
 
-import joblib
 import json
+from pathlib import Path
+
+import joblib
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from pathlib import Path
 from tqdm import tqdm
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -30,7 +31,9 @@ REPORTS_DIR = SRC_DIR / "reports"
 GRAPHICS_DIR = SRC_DIR / "graphics"
 FILES_DIR = SRC_DIR / "files"
 
-INPUT_DEFAULT_PATH = FILES_DIR / "retail_store_inventory_produccion_unknown.csv"
+INPUT_DEFAULT_PATH = (
+    FILES_DIR / "retail_store_inventory_produccion_unknown.csv"
+)
 OUTPUT_DEFAULT_PATH = FILES_DIR / "T_new_final.csv"
 REPORT_DEFAULT_PATH = REPORTS_DIR / "01_b_preprocessing_production_report.txt"
 PLOT_3D_DEFAULT_PATH = GRAPHICS_DIR / "pca_3d_nuevos.html"
@@ -42,7 +45,8 @@ def _ensure_output_dirs() -> None:
     GRAPHICS_DIR.mkdir(parents=True, exist_ok=True)
     FILES_DIR.mkdir(parents=True, exist_ok=True)
 
-def preprocessing_production(
+
+def preprocessing_production(  # noqa: PLR0914, PLR0915
     input_csv_path: str | Path | None = None,
     output_csv_path: str | Path | None = None,
     show_plots: bool = False,
@@ -52,15 +56,24 @@ def preprocessing_production(
     _ensure_output_dirs()
     progress = tqdm(total=6, desc="Preprocessing Prod", unit="paso")
 
-    input_path = Path(input_csv_path) if input_csv_path else INPUT_DEFAULT_PATH
-    output_path = Path(output_csv_path) if output_csv_path else OUTPUT_DEFAULT_PATH
+    input_path = Path(
+        input_csv_path
+        ) if input_csv_path else INPUT_DEFAULT_PATH
+    output_path = Path(
+        output_csv_path
+        ) if output_csv_path else OUTPUT_DEFAULT_PATH
 
     try:
         progress.set_postfix_str("Cargando artefactos")
-        preprocessor_cat = joblib.load(PREPROCESSING_DIR / "preprocessor_cat.joblib")
-        pca_pipe = joblib.load(PREPROCESSING_DIR / "pca_pipe_num.joblib")
+        preprocessor_cat = joblib.load(
+            PREPROCESSING_DIR / "preprocessor_cat.joblib"
+            )
+        pca_pipe = joblib.load(
+            PREPROCESSING_DIR / "pca_pipe_num.joblib"
+            )
 
-        with open(PREPROCESSING_DIR / "pca_metadata.json", "r", encoding="utf-8") as file:
+        with open(PREPROCESSING_DIR / "pca_metadata.json",
+                  encoding="utf-8") as file:
             meta = json.load(file)
 
         cols_num = meta["cols_num"]
@@ -70,7 +83,9 @@ def preprocessing_production(
         progress.update(1)
 
         progress.set_postfix_str("Leyendo datasets")
-        entrenamiento = pd.read_csv(PREPROCESSING_DIR / "T_train_final_objetivo.csv")
+        entrenamiento = pd.read_csv(
+            PREPROCESSING_DIR / "T_train_final_objetivo.csv"
+            )
         entrenamiento_pca_objetivo = entrenamiento[pc_cols]
 
         new_df = pd.read_csv(input_path)
@@ -99,7 +114,9 @@ def preprocessing_production(
 
         y_train = entrenamiento["objetivo"]
         df_plot2 = entrenamiento_pca_objetivo.iloc[:, :2].copy()
-        df_plot2["objetivo"] = y_train.loc[entrenamiento_pca_objetivo.index].astype(str)
+        df_plot2["objetivo"] = y_train.loc[
+            entrenamiento_pca_objetivo.index
+            ].astype(str)
 
         fig = px.scatter(
             df_plot2,
@@ -129,7 +146,9 @@ def preprocessing_production(
             fig.show()
 
         df3 = entrenamiento_pca_objetivo.iloc[:, :3].copy()
-        df3["objetivo"] = y_train.loc[entrenamiento_pca_objetivo.index].astype(str)
+        df3["objetivo"] = y_train.loc[
+            entrenamiento_pca_objetivo.index
+            ].astype(str)
 
         fig3 = px.scatter_3d(
             df3,
@@ -158,7 +177,8 @@ def preprocessing_production(
         )
 
         fig3.update_layout(
-            scene={"xaxis_title": "PC1", "yaxis_title": "PC2", "zaxis_title": "PC3"}
+            scene={"xaxis_title": "PC1", "yaxis_title": "PC2",
+                   "zaxis_title": "PC3"}
         )
 
         if save_plots:
@@ -171,7 +191,9 @@ def preprocessing_production(
             file.write("=" * 80 + "\n")
             file.write(f"Input: {input_path}\n")
             file.write(f"Output CSV: {output_path}\n")
-            file.write(f"Output Plot 3D: {PLOT_3D_DEFAULT_PATH if save_plots else 'No generado'}\n")
+            file.write(f"Output Plot 3D: {
+                PLOT_3D_DEFAULT_PATH if save_plots else 'No generado'
+                }\n")
             file.write(f"Registros procesados: {len(t_new_final)}\n")
             file.write(f"Columnas finales: {list(t_new_final.columns)}\n")
 
@@ -179,16 +201,15 @@ def preprocessing_production(
         progress.update(1)
 
         return True
-    except Exception as error:
-        print(f"Error en preprocessing_production: {error}")
+    except FileNotFoundError as fnf_error:
+        print(f"Archivo no encontrado: {fnf_error}")
+        return False
+    except pd.errors.EmptyDataError as ede_error:
+        print(f"Archivo CSV vacío: {ede_error}")
         return False
     finally:
         progress.close()
 
+
 if __name__ == "__main__":
     preprocessing_production()
-
-
-
-
-

@@ -9,3 +9,10 @@ __pycache__/
 src/files/
 src/graphics/
 src/reports/
+
+*.json
+*.png
+*.html
+*.joblib
+*.zip
+pyproject.toml

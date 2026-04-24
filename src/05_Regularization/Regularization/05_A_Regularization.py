@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Regularization 
 
@@ -25,18 +24,23 @@ Creditos especiales: Sofia Vanessa Noyola,
 
 V 0.0
 """
-import pandas as pd
-import numpy as np
-import joblib
 import json
-import os
-import zipfile
 import time
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-from sklearn.linear_model import RidgeCV, LassoCV, ElasticNetCV, LinearRegression
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+import zipfile
 from pathlib import Path
+
+import joblib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import (
+    ElasticNetCV,
+    LassoCV,
+    LinearRegression,
+    RidgeCV,
+)
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from tqdm import tqdm
 
 # 1. Cargar Datos
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -54,6 +58,7 @@ METADATA_FILENAME = "metadata_modelo.json"
 
 # 3. Calcular Métricas
 
+
 def calcular_metricas(modelo, X, y, nombre):
     """Calcula R², RMSE y MAE"""
     y_pred = modelo.predict(X)
@@ -63,6 +68,7 @@ def calcular_metricas(modelo, X, y, nombre):
         'RMSE': np.sqrt(mean_squared_error(y, y_pred)),
         'MAE': mean_absolute_error(y, y_pred)
     }
+
 
 def regularization() -> bool:
     """Ejecuta el proceso de regularización y retorna True/False."""
@@ -118,11 +124,11 @@ def regularization() -> bool:
 
         df_metricas = pd.DataFrame(metricas).set_index("Modelo").round(4)
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("COMPARACIÓN: REGRESIÓN LINEAL vs MODELOS REGULARIZADOS")
-        print("="*60)
+        print("=" * 60)
         print(df_metricas.to_string())
-        print("="*60)
+        print("=" * 60)
 
         comparacion_path = FILES_DIR / "comparacion_regularizacion.csv"
         df_metricas.to_csv(comparacion_path)
@@ -243,9 +249,9 @@ def regularization() -> bool:
         progress.set_postfix_str("Empaquetando modelo")
         progress.update(1)
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("CONCLUSIÓN")
-        print("="*60)
+        print("=" * 60)
 
         r2_base = df_metricas.loc[BASE_MODEL_NAME, "R²"]
         r2_ridge = df_metricas.loc[RIDGE_MODEL_NAME, "R²"]
@@ -253,12 +259,12 @@ def regularization() -> bool:
         r2_elastic = df_metricas.loc[ELASTIC_MODEL_NAME, "R²"]
 
         print(f"\nRegresión Lineal base: R² = {r2_base:.4f}")
-        print(f"Ridge (L2): R² = {r2_ridge:.4f} (diferencia: {(r2_ridge - r2_base)*100:+.2f}%)")
-        print(f"Lasso (L1): R² = {r2_lasso:.4f} (diferencia: {(r2_lasso - r2_base)*100:+.2f}%)")
-        print(f"Elastic Net: R² = {r2_elastic:.4f} (diferencia: {(r2_elastic - r2_base)*100:+.2f}%)")
+        print(f"Ridge (L2): R² = {r2_ridge:.4f} (diferencia: {(r2_ridge - r2_base) * 100:+.2f}%)")
+        print(f"Lasso (L1): R² = {r2_lasso:.4f} (diferencia: {(r2_lasso - r2_base) * 100:+.2f}%)")
+        print(f"Elastic Net: R² = {r2_elastic:.4f} (diferencia: {(r2_elastic - r2_base) * 100:+.2f}%)")
 
         print(f"\n>>> Mejor modelo regularizado: {mejor_modelo_nombre} <<<")
-        print("="*60)
+        print("=" * 60)
         progress.set_postfix_str("Completado")
         progress.update(2)
         return True
@@ -267,6 +273,7 @@ def regularization() -> bool:
         return False
     finally:
         progress.close()
+
 
 if __name__ == "__main__":
     regularization()
