@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Random Forest Production
+Random Forest Production.
 
 Estudiantes: Francisco Javier Ramos Jimenez,
              Karen Elizabeth Gonzalez Santana
@@ -12,9 +12,9 @@ Docente: Sarahi Partida Ochoa
 
 Creditos especiales: Sofia Vanessa Noyola,
                      Sebastian Garcia-Moreno Zinchenko,
-                     Mtro. Miguel Tlapa           
+                     Mtro. Miguel Tlapa
 
-V 0.0 
+V 0.1
 """
 
 # ===== Carga del modelo y predicción en datos nuevos =====
@@ -41,7 +41,10 @@ COLS_PATH = RANDOM_FOREST_FILES_DIR / "expected_columns.json"
 
 # Cargar artefactos
 def random_forest_production() -> bool:
-    """Ejecuta la predicción con el modelo de Random
+    """
+    Arranque de RF produccción.
+
+    Ejecuta la predicción con el modelo de Random
     Forest en producción y retorna True/False.
     """
     progress = tqdm(total=4, desc="Random Forest Prod", unit="paso")
@@ -58,8 +61,10 @@ def random_forest_production() -> bool:
         progress.update(1)
 
         if not all(col in df_nuevo.columns for col in expected_cols):
-            missing_cols = [col for col in expected_cols if col not in df_nuevo.columns]
-            print(f"Error: Faltan columnas esperadas en los nuevos datos: {missing_cols}")
+            missing_cols = [
+                col for col in expected_cols if col not in df_nuevo.columns]
+            print("Error: Faltan columnas esperadas en los nuevos datos:",
+                  f" {missing_cols}")
             return False
 
         df_nuevo = df_nuevo[expected_cols]
@@ -75,8 +80,14 @@ def random_forest_production() -> bool:
         progress.set_postfix_str("Completado")
         progress.update(2)
         return True
-    except Exception as error:
-        print(f"Error in random forest production: {error}")
+    except FileNotFoundError as fnf_error:
+        print(f"Archivo no encontrado: {fnf_error}")
+        return False
+    except json.JSONDecodeError as json_error:
+        print(f"Error al decodificar JSON: {json_error}")
+        return False
+    except pd.errors.EmptyDataError as ede:
+        print(f"Error al leer CSV: {ede}")
         return False
     finally:
         progress.close()

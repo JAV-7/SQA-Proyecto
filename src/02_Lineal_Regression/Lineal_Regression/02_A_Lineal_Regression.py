@@ -1,5 +1,5 @@
 """
-Lineal Regression
+Lineal Regression.
 
 El propòsito de este archivo es entrenar un modelo de regresiòn lineal
 para predecir el precio objetivo. Se generan los artefactos necesarios
@@ -19,13 +19,12 @@ Docente: Sarahi Partida Ochoa
 
 Creditos especiales: Sofia Vanessa Noyola,
                      Sebastian Garcia-Moreno Zinchenko,
-                     Mtro. Miguel Tlapa           
+                     Mtro. Miguel Tlapa
 
-V 0.0 
+V 0.2
 """
 
 import json
-import os
 import time
 import zipfile
 from pathlib import Path
@@ -65,18 +64,20 @@ def _ensure_output_dirs() -> None:
 SEP = "___"  # Con esto encuentra las columnas Categoricas (One Hot)
 
 
-def is_binary_series(s: pd.Series):
+def is_binary_series(s: pd.Series) -> bool:
     """Determina si una serie es binaria (0/1) considerando NaNs."""
     vals = pd.unique(s.dropna())
     return set(vals).issubset({0, 1}) or set(vals).issubset({0.0, 1.0})
 
 
-def prefix_of(col: str, sep=SEP):
-    """Dado un nombre de columna, devuelve el prefijo antes del separador si existe."""
+def prefix_of(col: str, sep: str = SEP) -> str | None:
+    """Dado un nombre de columna, devuelve el prefijo antes del separador."""
     return col.split(sep, 1)[0] if sep in col else None
 
 
-def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
+def build_nominal_blocks_by_prefix(
+        X: pd.DataFrame, sep: str = SEP
+        ) -> dict[str, list[str]]:
     """Agrupa columnas binarias por su prefijo común antes del separador."""
     blocks = {}
     for c in X.columns:
@@ -88,118 +89,139 @@ def build_nominal_blocks_by_prefix(X: pd.DataFrame, sep=SEP):
     return blocks
 
 
+def _load_and_prepare_data(
+        progress: tqdm) -> (tuple[pd.DataFrame, pd.DataFrame,
+                            np.ndarray, np.ndarray] | None):
+    """Carga y prepara datos de entrenamiento y prueba."""
+    progress.set_postfix_str("Cargando train/test")
+    train_df = pd.read_csv(PREPROCESSING_DIR / "T_train_final_objetivo.csv")
+    test_df = pd.read_csv(PREPROCESSING_DIR / "T_test_final_objetivo.csv")
+    progress.update(1)
+
+    X_train = train_df.iloc[:, :-1]
+    y_train = train_df.iloc[:, -1].to_numpy(dtype=float)
+    X_test = test_df.iloc[:, :-1]
+    y_test = test_df.iloc[:, -1].to_numpy(dtype=float)
+
+    return X_train, y_train, X_test, y_test
+
+
+def _build_and_train_pipeline(X_train: pd.DataFrame, y_train: np.ndarray,
+                              progress: tqdm) -> Pipeline:
+    """Construye y entrena el pipeline de regresión lineal."""
+    blocks = build_nominal_blocks_by_prefix(X_train, SEP)
+    cols_len = 2
+    drop_cols = [cols[0]
+                 for cols in blocks.values() if len(cols) >= cols_len]
+
+    progress.set_postfix_str("Preparando pipeline")
+    progress.update(1)
+
+    arreglar_despeje = ColumnTransformer(
+        transformers=[("drop_nominal_bases", "drop", drop_cols)],
+        remainder="passthrough",
+        verbose_feature_names_out=False,
+        force_int_remainder_cols=False
+    )
+
+    modelo = Pipeline([
+        ("dropper", arreglar_despeje),
+        ("linreg", LinearRegression(fit_intercept=True)),
+    ], memory=None)
+
+    modelo.fit(X_train, y_train)
+    progress.set_postfix_str("Entrenando modelo")
+    progress.update(1)
+
+    return modelo
+
+
+def _print_model_info(model: Pipeline, X_train: pd.DataFrame) -> None:
+    """Imprime información del modelo (intercepto y coeficientes)."""
+    intercepto = model.named_steps["linreg"].intercept_
+    coefs = model.named_steps["linreg"].coef_
+    feature_names = model.named_steps["dropper"].get_feature_names_out(
+        X_train.columns)
+
+    coef_df = pd.DataFrame({"feature": feature_names, "coef": coefs})
+    print("Intercepto (beta0):", intercepto)
+    print(coef_df)
+
+
+def _save_artifacts(model: Pipeline, X_train: pd.DataFrame,
+                    progress: tqdm) -> None:
+    """Guarda el modelo, columnas esperadas y crea archivo ZIP."""
+    model_path = MODEL_DIR / "modelo_reg_lineal.pkl"
+    expected_columns_path = LINEAR_FILES_DIR / "expected_columns.json"
+
+    joblib.dump(model, model_path)
+    expected_cols = X_train.columns.tolist()
+    with open(expected_columns_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {"columns": expected_cols,
+             "saved_at": time.strftime("%Y-%m-%d %H:%M:%S")},
+            f)
+
+    print("Artefactos guardados:", model_path, expected_columns_path)
+
+    zip_path = MODEL_DIR / "mi_reg_lin_artifacts_bundle.zip"
+    candidates = [model_path, expected_columns_path]
+    present = [f for f in candidates if Path(f).exists()]
+
+    with zipfile.ZipFile(
+        zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for f in present:
+            zf.write(f, arcname=Path(f).name)
+
+    print("ZIP creado en:", zip_path)
+    print("Incluidos:", present)
+    progress.set_postfix_str("Guardando artefactos")
+    progress.update(1)
+
+
+def _evaluate_and_print_metrics(model: Pipeline, X_train: pd.DataFrame,
+                                y_train: np.ndarray, X_test: pd.DataFrame,
+                                y_test: np.ndarray) -> None:
+    """Evalúa el modelo e imprime métricas."""
+    y_train_pred = model.predict(X_train)
+    y_test_pred = model.predict(X_test)
+
+    print("\n=== MÉTRICAS DE EVALUACIÓN ===")
+    print("\nTRAIN:")
+    print(f"  R² Score: {r2_score(y_train, y_train_pred):.4f}")
+    print(f"  RMSE: {np.sqrt(mean_squared_error(y_train, y_train_pred)):.4f}")
+    print(f"  MAE: {mean_absolute_error(y_train, y_train_pred):.4f}")
+
+    print("\nTEST:")
+    print(f"  R² Score: {r2_score(y_test, y_test_pred):.4f}")
+    print(f"  RMSE: {np.sqrt(mean_squared_error(y_test, y_test_pred)):.4f}")
+    print(f"  MAE: {mean_absolute_error(y_test, y_test_pred):.4f}")
+
+
 def lineal_regression() -> bool:
     """Ejecuta el entrenamiento de regresión lineal y retorna True/False."""
     progress = tqdm(total=6, desc="Lineal Regression", unit="paso")
     try:
         _ensure_output_dirs()
 
-        progress.set_postfix_str("Cargando train/test")
-        train_df = pd.read_csv(PREPROCESSING_DIR / "T_train_final_objetivo.csv")
-        test_df = pd.read_csv(PREPROCESSING_DIR / "T_test_final_objetivo.csv")
-        progress.update(1)
-
-        X_train = train_df.iloc[:, :-1]
-        y_train = train_df.iloc[:, -1].to_numpy(dtype=float)
-
-        X_test = test_df.iloc[:, :-1]
-        y_test = test_df.iloc[:, -1].to_numpy(dtype=float)
-
-        # 1) --- PRECOMPUTA CON TRAIN ---
-        blocks = build_nominal_blocks_by_prefix(X_train, SEP)
-        drop_cols = [cols[0] for cols in blocks.values() if len(cols) >= 2]  # primera de cada bloque
-        progress.set_postfix_str("Preparando pipeline")
-        progress.update(1)
-
-        # 2) --- PIPELINE SIN CLASES (usa ColumnTransformer para dropear fijo) ---
-        arreglar_despeje = ColumnTransformer(
-            transformers=[("drop_nominal_bases", "drop", drop_cols)],
-            remainder="passthrough",
-            verbose_feature_names_out=False,
-            force_int_remainder_cols=False
-        )
-
-        mi_regresion_lineal = Pipeline([
-            ("dropper", arreglar_despeje),
-            ("linreg", LinearRegression(fit_intercept=True)),
-        ], memory=None)
-
-        # 3) --- FIT & PRED ---
-        mi_regresion_lineal.fit(X_train, y_train)
-        progress.set_postfix_str("Entrenando modelo")
-        progress.update(1)
-
-        # Intercepto y coeficientes del modelo dentro del pipeline
-        intercepto = mi_regresion_lineal.named_steps["linreg"].intercept_
-        coefs = mi_regresion_lineal.named_steps["linreg"].coef_
-
-        # Nombres de columnas después del dropper (lo más directo)
-        feature_names = mi_regresion_lineal.named_steps["dropper"].get_feature_names_out(X_train.columns)
-
-        # Mostrar los estimadores beta_0,beta_1,...,beta_p
-        coef_df = pd.DataFrame({"feature": feature_names, "coef": coefs})
-        print("Intercepto (beta0):", intercepto)
-        print(coef_df)
-
-        # guarda el pipeline completo (dropper + LinearRegression)
-        model_path = MODEL_DIR / "modelo_reg_lineal.pkl"
-        expected_columns_path = LINEAR_FILES_DIR / "expected_columns.json"
-        joblib.dump(mi_regresion_lineal, model_path)
-
-        # guarda el orden/esperado de columnas de entrenamiento
-        expected_cols = X_train.columns.tolist()
-        with open(expected_columns_path, "w", encoding="utf-8") as f:
-            json.dump({"columns": expected_cols, "saved_at": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
-
-        print("Artefactos guardados:", model_path, expected_columns_path)
-
-        # Carpeta destino en tu PC
-        dst_dir = MODEL_DIR
-        os.makedirs(dst_dir, exist_ok=True)
-        zip_path = os.path.join(dst_dir, "mi_reg_lin_artifacts_bundle.zip")
-
-        # Archivos que quieres incluir (ajusta si te falta alguno)
-        candidates = [
-            model_path,
-            expected_columns_path,
-        ]
-
-        present = [f for f in candidates if Path(f).exists()]
-        # Si quieres incluir una carpeta (p. ej., 'sample_data'), descomenta:
-        # for root, _, files in os.walk("sample_data"):
-        #     for f in files:
-        #         present.append(os.path.join(root, f))
-
-        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            for f in present:
-                zf.write(f, arcname=Path(f).name)  # guarda sin subcarpetas
-
-        print("ZIP creado en:", zip_path)
-        print("Incluidos:", present)
-        progress.set_postfix_str("Guardando artefactos")
-        progress.update(1)
-
-        # Evaluación en train y test
-        y_train_pred = mi_regresion_lineal.predict(X_train)
-        y_test_pred = mi_regresion_lineal.predict(X_test)
-
-        print("\n=== MÉTRICAS DE EVALUACIÓN ===")
-        print("\nTRAIN:")
-        print(f"  R² Score: {r2_score(y_train, y_train_pred):.4f}")
-        print(f"  RMSE: {np.sqrt(mean_squared_error(y_train, y_train_pred)):.4f}")
-        print(f"  MAE: {mean_absolute_error(y_train, y_train_pred):.4f}")
-
-        print("\nTEST:")
-        print(f"  R² Score: {r2_score(y_test, y_test_pred):.4f}")
-        print(f"  RMSE: {np.sqrt(mean_squared_error(y_test, y_test_pred)):.4f}")
-        print(f"  MAE: {mean_absolute_error(y_test, y_test_pred):.4f}")
+        X_train, y_train, X_test, y_test = _load_and_prepare_data(progress)
+        modelo = _build_and_train_pipeline(X_train, y_train, progress)
+        _print_model_info(modelo, X_train)
+        _save_artifacts(modelo, X_train, progress)
+        _evaluate_and_print_metrics(modelo, X_train, y_train, X_test, y_test)
 
         progress.set_postfix_str("Completado")
         progress.update(2)
 
         return True
-    except Exception as error:
-        print(f"Error in lineal regression: {error}")
+    except FileNotFoundError as fnf_error:
+        print(f"Archivo no encontrado: {fnf_error}")
+        return False
+    except ValueError as val_error:
+        print(f"Error de valor: {val_error}")
+        return False
+    except pd.errors.ParserError as parse_error:
+        print(f"Error al parsear CSV: {parse_error}")
         return False
     finally:
         progress.close()

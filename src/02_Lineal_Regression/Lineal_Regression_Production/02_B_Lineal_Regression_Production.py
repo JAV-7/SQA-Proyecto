@@ -1,5 +1,5 @@
 """
-Lineal Regression Production
+Lineal Regression Production.
 
 Estudiantes: Francisco Javier Ramos Jimenez,
              Karen Elizabeth Gonzalez Santana
@@ -10,9 +10,9 @@ Docente: Sarahi Partida Ochoa
 
 Creditos especiales: Sofia Vanessa Noyola,
                      Sebastian Garcia-Moreno Zinchenko,
-                     Mtro. Miguel Tlapa           
+                     Mtro. Miguel Tlapa
 
-V 0.0 
+V 0.1
 """
 
 import json
@@ -38,7 +38,9 @@ def lineal_regression_production() -> bool:
         # Cargar modelo y columnas esperadas
         progress.set_postfix_str("Cargando artefactos")
         modelo = joblib.load(MODEL_DIR / "modelo_reg_lineal.pkl")
-        with open(LINEAR_FILES_DIR / "expected_columns.json", encoding="utf-8") as f:
+        with open(
+            LINEAR_FILES_DIR / "expected_columns.json", encoding="utf-8"
+            ) as f:
             expected_cols = json.load(f)["columns"]
         progress.update(1)
 
@@ -49,8 +51,11 @@ def lineal_regression_production() -> bool:
 
         # Verificar que las columnas esperadas estén presentes
         if not all(col in df_nuevo.columns for col in expected_cols):
-            missing_cols = [col for col in expected_cols if col not in df_nuevo.columns]
-            print(f"Error: Faltan columnas esperadas en los nuevos datos: {missing_cols}")
+            missing_cols = [
+                col for col in expected_cols if col not in df_nuevo.columns
+                ]
+            print("Error: Faltan columnas esperadas",
+                f" en los nuevos datos: {missing_cols}")
             return False
 
         # Predecir con el modelo
@@ -67,8 +72,11 @@ def lineal_regression_production() -> bool:
         progress.update(1)
         return True
 
-    except Exception as error:
-        print(f"Error en regresión lineal de producción: {error}")
+    except FileNotFoundError as fnf_error:
+        print(f"Archivo no encontrado: {fnf_error}")
+        return False
+    except pd.errors.EmptyDataError as ede:
+        print(f"Error al leer CSV: {ede}")
         return False
     finally:
         progress.close()

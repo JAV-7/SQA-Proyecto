@@ -1,7 +1,17 @@
+"""
+IQR - Interquartile Range.
+
+Calcula el número y porcentaje de outliers en una serie
+usando el método del rango intercuartílico (IQR).
+
+V 0.1
+"""
+
 import pandas as pd
 
 
 def iqr_outlier_stats(series: pd.Series) -> tuple[int, float]:
+    """Calcula el número y porcentaje de outliers en una serie usando IQR."""
     series = pd.to_numeric(series, errors="coerce").dropna()
     if series.empty:
         return 0, 0.0
