@@ -1,13 +1,9 @@
 """
-Test suite para el pipeline de ML (Calidad de Software).
+Test para el pipeline de ML (Calidad de Software).
 
 Ejecución desde la raíz del proyecto:
     pytest src/tests/test_pipeline.py -v
 
-pytest.ini debe tener:
-    --cov=src/00_Data_Clean
-    --cov=src/01_Preprocessing/...
-    etc.
 """
 
 from __future__ import annotations
@@ -28,16 +24,12 @@ from sklearn.linear_model import ElasticNetCV, LassoCV, LinearRegression, RidgeC
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
-# ---------------------------------------------------------------------------
 # sys.path – agrega src/ para que "import paths" funcione
-# ---------------------------------------------------------------------------
 SRC_DIR = Path(__file__).resolve().parents[1]
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-# ---------------------------------------------------------------------------
-# Stubs de Common_Functions (evita ImportError al importar módulos reales)
-# ---------------------------------------------------------------------------
+# evita ImportError al importar módulos reales
 def _register_stubs():
     cf     = types.ModuleType("Common_Functions")
     cf_col = types.ModuleType("Common_Functions.Columns")
@@ -62,9 +54,8 @@ def _register_stubs():
 
 _register_stubs()
 
-# ---------------------------------------------------------------------------
-# Helper para importar módulos por ruta de archivo
-# ---------------------------------------------------------------------------
+#importar módulos por ruta de archivo
+
 def _import(rel: str):
     path = SRC_DIR / rel
     spec = importlib.util.spec_from_file_location(path.stem, path)
@@ -72,8 +63,8 @@ def _import(rel: str):
     spec.loader.exec_module(mod)
     return mod
 
-# Importar módulos reales
-import paths as _paths                                                    # noqa: E402
+# Importar modulos reales
+import paths as _paths                                                
 _dc  = _import("00_Data_Clean/00_A_Data_Clean.py")
 _me  = _import("04_Model_Evaluation/04_A_Model_Evaluation.py")
 _reg = _import("05_Regularization/Regularization/05_A_Regularization.py")
@@ -83,7 +74,6 @@ _rf  = _import("03_Random_Forest/Random_Forest/03_A_Random_Forest.py")
 
 # ---------------------------------------------------------------------------
 # Fixtures
-# ---------------------------------------------------------------------------
 
 def _make_raw_df(n=60, seed=0):
     rng = np.random.default_rng(seed)
@@ -115,7 +105,6 @@ def _make_preprocessed_df(n=80, seed=0):
     data["objetivo"] = rng.uniform(10, 400, n)
     return pd.DataFrame(data)
 
-
 @pytest.fixture
 def raw_df():
     return _make_raw_df()
@@ -131,10 +120,8 @@ def train_test(preprocessed_df):
     return train_test_split(X, y, test_size=0.25, random_state=42)
 
 
-# ===========================================================================
-# paths.py
-# ===========================================================================
 
+# paths.py
 class TestPaths:
     def test_all_paths_are_strings(self):
         for attr in ["DATA_CLEAN_PATH","PREPROCESSING_PATH",
@@ -166,11 +153,7 @@ class TestPaths:
                      "LINEAL_REGRESSION_PATH","RANDOM_FOREST_PATH"]:
             assert "Production" not in getattr(_paths, attr), attr
 
-
-# ===========================================================================
 # 00_A_Data_Clean
-# ===========================================================================
-
 class TestDataClean:
 
     def test_clean_text_strips_and_lowercases(self, raw_df):
@@ -251,11 +234,7 @@ class TestDataClean:
         assert out.exists()
         assert "Dimensiones" in out.read_text()
 
-
-# ===========================================================================
 # 02_A_Lineal_Regression
-# ===========================================================================
-
 class TestLinealRegression:
 
     def test_is_binary_true(self):
@@ -305,11 +284,7 @@ class TestLinealRegression:
         out = capsys.readouterr().out
         assert "Intercepto" in out or "coef" in out.lower()
 
-
-# ===========================================================================
 # 03_A_Random_Forest
-# ===========================================================================
-
 class TestRandomForest:
 
     def test_is_binary(self):
@@ -355,11 +330,7 @@ class TestRandomForest:
         missing = [c for c in expected if c not in df_new.columns]
         assert "PC1" in missing
 
-
-# ===========================================================================
 # 04_A_Model_Evaluation
-# ===========================================================================
-
 class TestModelEvaluation:
 
     def test_calcular_metricas_all_keys(self, preprocessed_df):
@@ -424,11 +395,7 @@ class TestModelEvaluation:
         _me._print_comparative_report(m1, m2, table)
         assert "GANADOR" in capsys.readouterr().out
 
-
-# ===========================================================================
 # 05_A_Regularization
-# ===========================================================================
-
 class TestRegularization:
 
     def test_calcular_metricas(self, train_test):
@@ -552,11 +519,7 @@ class TestRegularization:
             _reg._plot_and_save_metrics(table)
         assert (tmp_path/"comparacion_regularizacion.png").exists()
 
-
-# ===========================================================================
-# Artifact persistence
-# ===========================================================================
-
+# Artifact 
 class TestArtifactPersistence:
 
     def test_joblib_roundtrip(self, tmp_path, preprocessed_df):
@@ -592,11 +555,6 @@ class TestArtifactPersistence:
         with zipfile.ZipFile(zp) as z:
             assert "file.txt" in z.namelist()
 
-
-# ===========================================================================
-# Edge cases
-# ===========================================================================
-
 class TestEdgeCases:
 
     def test_k90_k95_valid(self):
@@ -624,11 +582,7 @@ class TestEdgeCases:
         Xtr, Xte, _, _ = train_test_split(X, y, test_size=0.25, random_state=42)
         assert len(Xtr) + len(Xte) == len(X)
 
-
-# ===========================================================================
-# Common_Functions – imports reales
-# ===========================================================================
-
+# Common_Functions 
 def _import_cf(rel: str):
     import importlib.util
     path = Path(__file__).resolve().parents[1] / rel
@@ -637,14 +591,13 @@ def _import_cf(rel: str):
     spec.loader.exec_module(mod)
     return mod
 
-# Importar módulos reales de Common_Functions
+# Importar modulos  de Common_Functions
 try:
     _cf_cols = _import_cf("Common_Functions/Columns.py")
     _cf_iqr  = _import_cf("Common_Functions/IQR.py")
     _CF_AVAILABLE = True
 except Exception:
     _CF_AVAILABLE = False
-
 
 class TestCommonFunctionsColumns:
 
@@ -697,7 +650,6 @@ class TestCommonFunctionsColumns:
         assert "int_col" in num
         assert "float_col" in num
         assert "str_col" in cat
-
 
 class TestCommonFunctionsIQR:
 
@@ -753,11 +705,6 @@ class TestCommonFunctionsIQR:
         n, pct = _cf_iqr.iqr_outlier_stats(s)
         assert isinstance(n, int)
 
-
-# ===========================================================================
-# Tests adicionales para subir coverage de módulos existentes
-# ===========================================================================
-
 class TestDataCleanExtra:
 
     def test_plot_numeric_columns_runs(self, tmp_path):
@@ -799,7 +746,6 @@ class TestDataCleanExtra:
             _dc.save_clean_data(df)
         assert (tmp_path/"retail_store_inventory_produccion_unknown.csv").exists()
 
-
 class TestLinealRegressionExtra:
 
     def test_build_and_train_pipeline_returns_pipeline(self, preprocessed_df):
@@ -829,7 +775,6 @@ class TestLinealRegressionExtra:
             _lr._save_artifacts(pipe, X, progress)
         assert (tmp_path/"modelo_reg_lineal.pkl").exists()
         progress.close()
-
 
 class TestRandomForestExtra:
 
@@ -875,7 +820,6 @@ class TestRandomForestExtra:
         assert (tmp_path/"model.pkl").exists()
         progress.close()
 
-
 class TestModelEvaluationExtra:
 
     def test_plot_model_comparison_returns_figure(self, preprocessed_df):
@@ -910,11 +854,6 @@ class TestModelEvaluationExtra:
         assert (tmp_path/"comparacion_modelos.png").exists()
         assert (tmp_path/"metricas_comparativas.csv").exists()
         plt.close("all")
-
-
-# ===========================================================================
-# Tests adicionales para llegar a 80%+
-# ===========================================================================
 
 class TestColumnsExceptions:
     """Fuerza los bloques except de Columns.py mediante mocks."""
@@ -951,7 +890,6 @@ class TestColumnsExceptions:
             n, c = _cf_cols.get_columns(pd.DataFrame({"a": [1]}))
         assert n == [] and c == []
 
-
 class TestEnsureOutputDirs:
     """Cubre _ensure_output_dirs de cada módulo."""
 
@@ -976,7 +914,6 @@ class TestEnsureOutputDirs:
               patch.object(_reg, "REGULARIZATION_BUNDLE_DIR",tmp_path/"rb")):
             _reg._ensure_output_dirs()
         assert (tmp_path/"rf").exists()
-
 
 class TestLoadFunctionsWithMocks:
     """Cubre _load_test_data, _load_models, _load_data, _load_and_prepare_data."""
@@ -1052,7 +989,6 @@ class TestLoadFunctionsWithMocks:
         assert len(X_tr) > 0
         progress.close()
 
-
 class TestTrainModels:
     """Cubre _train_models de regularización con alphas reducidos."""
 
@@ -1089,7 +1025,6 @@ class TestTrainModels:
                                 max_iter=500).fit(X_tr, y_tr)
         assert hasattr(ridge, "alpha_")
         assert hasattr(lasso, "alpha_")
-
 
 class TestModelEvaluationOrchestrator:
     """Cubre model_evaluation() completo con mocks de IO."""
