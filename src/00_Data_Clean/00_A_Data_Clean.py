@@ -43,6 +43,9 @@ FILES_DIR = BASE_DIR / "files"
 INITIAL_INSIGHTS_PATH = REPORTS_DIR / "initial_insights.txt"
 CLEAN_DATA_PATH = REPORTS_DIR / "clean_data.txt"
 
+STORE_ID = "Store ID"
+PRODUCT_ID = "Product ID"
+DATE = "Date"
 
 def _ensure_output_dirs() -> None:
     """Asegura que los directorios de salida existan, creándolos si no."""
@@ -199,29 +202,29 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame | None:
         if "Weather Condition" in df_clean.columns:
             df_clean = df_clean.drop(columns=["Weather Condition"])
 
-        if "Date" in df_clean.columns:
-            df_clean["Date"] = pd.to_datetime(
-                df_clean["Date"], dayfirst=True, errors="coerce"
+        if DATE in df_clean.columns:
+            df_clean[DATE] = pd.to_datetime(
+                df_clean[DATE], dayfirst=True, errors="coerce"
             )
             df_clean["date_timestamp"] = (
-                df_clean["Date"].astype("int64", errors="ignore") // 10**9
+                df_clean[DATE].astype("int64", errors="ignore") // 10**9
             )
-            df_clean = df_clean.drop(columns=["Date"])
+            df_clean = df_clean.drop(columns=[DATE])
 
-        if "Store ID" in df_clean.columns:
-            df_clean["Store ID"] = (
-                df_clean["Store ID"].astype(str).str.extract(r"(\d+)")[0]
+        if STORE_ID in df_clean.columns:
+            df_clean[STORE_ID] = (
+                df_clean[STORE_ID].astype(str).str.extract(r"(\d+)")[0]
             )
-            df_clean["Store ID"] = pd.to_numeric(
-                df_clean["Store ID"], errors="coerce"
+            df_clean[STORE_ID] = pd.to_numeric(
+                df_clean[STORE_ID], errors="coerce"
             ).astype("Int64")
 
-        if "Product ID" in df_clean.columns:
-            df_clean["Product ID"] = (
-                df_clean["Product ID"].astype(str).str.extract(r"(\d+)")[0]
+        if PRODUCT_ID in df_clean.columns:
+            df_clean[PRODUCT_ID] = (
+                df_clean[PRODUCT_ID].astype(str).str.extract(r"(\d+)")[0]
             )
-            df_clean["Product ID"] = pd.to_numeric(
-                df_clean["Product ID"], errors="coerce"
+            df_clean[PRODUCT_ID] = pd.to_numeric(
+                df_clean[PRODUCT_ID], errors="coerce"
             ).astype("Int64")
 
         df_clean = _clean_text_columns(df_clean)
