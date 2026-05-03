@@ -86,12 +86,7 @@ jobs:
       # Buscamos cosas sospechosas como credenciales hardcodeadas
 
       - name: "Gate 4 · Seguridad"
-        run: |
-          bandit -r ./src \
-            --severity-level medium \
-            --exit-zero-on-skips \
-            -f txt
-
+        run: bandit -r ./src --severity-level medium -f txt --exit-zero
 
       # Gate 5 — Compatibilidad
       # Realmente esto ya lo cubre la matrix,
