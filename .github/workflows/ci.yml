@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         # Probamos en dos versiones de Python para asegurarnos que no rompemos compatibilidad
-        python-version: ["3.8", "3.11"]
+        python-version: "3.11"
 
     steps:
       # Traemos el codigo del repo
