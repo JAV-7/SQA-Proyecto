@@ -21,8 +21,9 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import ElasticNetCV, LassoCV, LinearRegression, RidgeCV
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+import paths as _paths   
 
 # sys.path – agrega src/ para que "import paths" funcione
 SRC_DIR = Path(__file__).resolve().parents[1]
@@ -63,8 +64,7 @@ def _import(rel: str):
     spec.loader.exec_module(mod)
     return mod
 
-# Importar modulos reales
-import paths as _paths                                                
+# Importar modulos reales                                             
 _dc  = _import("00_Data_Clean/00_A_Data_Clean.py")
 _me  = _import("04_Model_Evaluation/04_A_Model_Evaluation.py")
 _reg = _import("05_Regularization/Regularization/05_A_Regularization.py")
@@ -938,7 +938,8 @@ class TestLoadFunctionsWithMocks:
 
         fake_lin = tmp_path / "lin"
         fake_rf  = tmp_path / "rf"
-        fake_lin.mkdir(); fake_rf.mkdir()
+        fake_lin.mkdir()
+        fake_rf.mkdir()
 
         with patch.object(_me, "_load_models",
                           return_value=(m, m)):
