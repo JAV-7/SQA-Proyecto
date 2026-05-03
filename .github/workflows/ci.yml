@@ -1,0 +1,103 @@
+#Estudiantes: Francisco Javier Ramos Jimenez,
+#Karen Elizabeth Gonzalez Santana
+
+#Materia: Calidad de Software
+
+#Docente: Sarahi Partida Ochoa
+
+
+name: Pipeline  — SQA Proyecto
+
+
+on:
+  # Se ejecuta en cualquier push
+  push:
+    branches: ["**"]
+
+  # Y tambien cuando alguien quiere hacer merge a main (pull request)
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Probamos en dos versiones de Python para asegurarnos que no rompemos compatibilidad
+        python-version: ["3.8", "3.11"]
+
+    steps:
+      # Traemos el codigo del repo
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # Configuramos la version de Python 
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Instalamos todo lo necesario para correr el proyecto y las validaciones
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # herramientas de calidad
+          pip install ruff pytest pytest-cov bandit
+
+     
+      # Gate 1 — Estilo de codigo
+      # Aqui validamos que el codigo siga buenas practicas (tipo PEP 8)
+
+
+      - name: "Gate 1 · Estilo de código"
+        run: ruff check ./src
+
+
+      # Gate 2 — Tests
+      # Ejecutamos las pruebas unitarias
+
+      - name: "Gate 2 · Pruebas unitarias"
+        run: pytest src/tests/ -v
+
+
+      # Gate 3 — Cobertura
+      # Revisamos que tanto del código está cubierto por tests
+      # Pedimos minimo 80%, si baja de eso falla
+
+      - name: "Gate 3 · Cobertura (mínimo 80%)"
+        run: |
+          pytest src/tests/ \
+            --cov=src \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=80
+
+      # Guardamos el reporte 
+      - name: Subir reporte de cobertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-py${{ matrix.python-version }}
+          path: coverage.xml
+
+
+      # Gate 4 — Seguridad
+      # Buscamos cosas sospechosas como credenciales hardcodeadas
+
+      - name: "Gate 4 · Seguridad"
+        run: |
+          bandit -r ./src \
+            --severity-level medium \
+            --exit-zero-on-skips \
+            -f txt
+
+
+      # Gate 5 — Compatibilidad
+      # Realmente esto ya lo cubre la matrix,
+      # pero dejamos este paso para dejar claro que paso en cada versión
+  
+      - name: "Gate 5 · Compatibilidad Python ${{ matrix.python-version }}"
+        run: |
+          echo "Todo bien en Python ${{ matrix.python-version }}"
+          python --version
