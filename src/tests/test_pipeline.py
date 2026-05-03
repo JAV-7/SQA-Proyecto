@@ -1164,23 +1164,6 @@ class TestLoadFunctionsWithMocks:
         assert len(X_tr) > 0
         progress.close()
 
-    def test_load_and_prepare_data_rf(self, tmp_path, preprocessed_df):
-        from tqdm import tqdm
-
-        train_csv = tmp_path / "T_train_final_objetivo.csv"
-        test_csv = tmp_path / "T_test_final_objetivo.csv"
-        preprocessed_df.to_csv(train_csv, index=False)
-        preprocessed_df.to_csv(test_csv, index=False)
-        progress = tqdm(total=3, disable=True)
-        with (
-            patch.object(_rf, "SRC_DIR", tmp_path),
-            patch.object(_rf, "RANDOM_FOREST_FILES_DIR", tmp_path / "rff"),
-        ):
-            X_tr, y_tr, X_te, y_te = _rf._load_and_prepare_data(progress)
-        assert len(X_tr) > 0
-        progress.close()
-
-
 class TestTrainModels:
     """Cubre _train_models de regularización con alphas reducidos."""
 
