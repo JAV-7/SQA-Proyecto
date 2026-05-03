@@ -59,7 +59,10 @@ def _register_stubs():
     sys.modules.setdefault("Common_Functions.Columns", cf_col)
     sys.modules.setdefault("Common_Functions.IQR", cf_iqr)
 
-
+def test_algo(tmp_path):
+    file = tmp_path / "T_train_final_objetivo.csv"
+    file.write_text("col1,col2\n1,2\n3,4") 
+    
 _register_stubs()
 
 
