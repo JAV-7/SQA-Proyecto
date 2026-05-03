@@ -5,7 +5,11 @@ Ejecución desde la raíz del proyecto:
     pytest src/tests/test_pipeline.py -v
 
 """
+import sys
+import os
 
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from __future__ import annotations
 
 import importlib.util
